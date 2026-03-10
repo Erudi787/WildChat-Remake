@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: wildchat-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: wildchat
+      POSTGRES_PASSWORD: wildchat_password
+      POSTGRES_DB: wildchat_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - wildchat_pgdata:/var/lib/postgresql/data
+
+volumes:
+  wildchat_pgdata:
