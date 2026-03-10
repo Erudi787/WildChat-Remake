@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import SessionProvider from "@/components/session-provider";
 
 export const metadata: Metadata = {
   title: "WildChat – Love Purrs Around Campus",
-  description: "Campus-based real-time chat application",
+  description:
+    "Campus-based real-time chat application for CIT-U Wildcats. Connect, chat, and share with your campus community.",
 };
 
 export default function RootLayout({
@@ -14,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        {children}
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

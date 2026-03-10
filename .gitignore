@@ -56,3 +56,5 @@ pnpm-debug.log*
 
 apps/web/app/.next
 apps/web/.env
+
+local-data
