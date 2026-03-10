@@ -152,22 +152,44 @@ export async function POST(req: Request, context: RouteContext) {
       }),
     ]);
 
-    return NextResponse.json(
-      {
-        message: {
-          id: message.id,
-          content: message.content,
-          type: message.type,
-          senderId: message.senderId,
-          createdAt: message.createdAt.toISOString(),
-          sender: {
-            id: message.sender.id,
-            username: message.sender.username,
-            displayName: message.sender.profile?.displayName || message.sender.username,
-            avatarUrl: message.sender.profile?.avatarUrl || null,
-          },
-        },
+    const messagePayload = {
+      id: message.id,
+      content: message.content,
+      type: message.type,
+      senderId: message.senderId,
+      createdAt: message.createdAt.toISOString(),
+      sender: {
+        id: message.sender.id,
+        username: message.sender.username,
+        displayName: message.sender.profile?.displayName || message.sender.username,
+        avatarUrl: message.sender.profile?.avatarUrl || null,
       },
+    };
+
+    // Broadcast through realtime server (fire-and-forget)
+    const realtimeUrl = process.env.REALTIME_INTERNAL_URL;
+    const apiKey = process.env.INTERNAL_API_KEY;
+    if (realtimeUrl && apiKey) {
+      const participants = await prisma.conversationParticipant.findMany({
+        where: { conversationId },
+        select: { userId: true },
+      });
+
+      fetch(`${realtimeUrl}/emit/message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          message: { ...messagePayload, conversationId },
+          participantUserIds: participants.map((p) => p.userId),
+        }),
+      }).catch((err) => console.error("Realtime broadcast failed:", err));
+    }
+
+    return NextResponse.json(
+      { message: messagePayload },
       { status: 201 }
     );
   } catch (error) {

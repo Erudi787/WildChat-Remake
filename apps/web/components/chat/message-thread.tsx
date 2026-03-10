@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import MessageInput from "./message-input";
+import { useSocket, SocketMessage } from "@/hooks/use-socket";
 
 interface MessageSender {
   id: string;
@@ -30,8 +31,36 @@ export default function MessageThread({
 }: MessageThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [typingUser, setTypingUser] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Socket.IO hook — receives messages in realtime
+  const { connected, emitTypingStart, emitTypingStop } = useSocket({
+    conversationId,
+    onNewMessage: (msg: SocketMessage) => {
+      // Only add if message is for this conversation and not already in list
+      if (msg.conversationId === conversationId) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+      }
+    },
+    onTypingStart: (data) => {
+      if (data.userId !== currentUserId) {
+        setTypingUser(data.displayName);
+        // Auto-clear after 3 seconds
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setTypingUser(null), 3000);
+      }
+    },
+    onTypingStop: (data) => {
+      if (data.userId !== currentUserId) {
+        setTypingUser(null);
+      }
+    },
+  });
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -40,7 +69,6 @@ export default function MessageThread({
       );
       const data = await res.json();
       if (data.messages) {
-        // API returns newest-first, we want oldest-first for display
         setMessages(data.messages.reverse());
       }
     } catch (error) {
@@ -50,22 +78,26 @@ export default function MessageThread({
     }
   }, [conversationId]);
 
+  // Initial load
   useEffect(() => {
     setMessages([]);
     setLoading(true);
     fetchMessages();
-
-    // Poll for new messages every 3 seconds
-    const interval = setInterval(fetchMessages, 3000);
-    return () => clearInterval(interval);
   }, [fetchMessages]);
 
+  // Fallback polling only when Socket.IO is not connected
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
+    if (connected) return; // No need to poll if socket is live
+    const interval = setInterval(fetchMessages, 3000);
+    return () => clearInterval(interval);
+  }, [fetchMessages, connected]);
+
+  // Auto-scroll
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Mark conversation as read when viewing
+  // Mark as read
   useEffect(() => {
     if (messages.length > 0) {
       const lastMsg = messages[messages.length - 1];
@@ -73,7 +105,7 @@ export default function MessageThread({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messageId: lastMsg.id }),
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [conversationId, messages]);
 
@@ -89,11 +121,20 @@ export default function MessageThread({
       );
       const data = await res.json();
       if (data.message) {
-        setMessages((prev) => [...prev, data.message]);
+        // Optimistically add if not already present from socket
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.message.id)) return prev;
+          return [...prev, data.message];
+        });
       }
+      emitTypingStop();
     } catch (error) {
       console.error("Failed to send message:", error);
     }
+  }
+
+  function handleTyping() {
+    emitTypingStart(""); // displayName handled server-side
   }
 
   function formatMessageTime(dateStr: string) {
@@ -118,8 +159,15 @@ export default function MessageThread({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Connection status */}
+      {connected && (
+        <div className="px-4 py-1 bg-green-50 text-green-700 text-xs text-center border-b">
+          🟢 Connected — messages update instantly
+        </div>
+      )}
+
       {/* Messages area */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-1">
+      <div className="flex-1 overflow-y-auto p-4 space-y-1">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
             <div className="text-center">
@@ -148,16 +196,14 @@ export default function MessageThread({
                   </div>
                 )}
                 <div
-                  className={`flex ${
-                    isOwn ? "justify-end" : "justify-start"
-                  } mb-1`}
+                  className={`flex ${isOwn ? "justify-end" : "justify-start"
+                    } mb-1`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                      isOwn
+                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${isOwn
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-muted rounded-bl-md"
-                    }`}
+                      }`}
                   >
                     {!isOwn && (
                       <p className="text-xs font-medium mb-0.5 opacity-70">
@@ -168,9 +214,10 @@ export default function MessageThread({
                       {msg.content}
                     </p>
                     <p
-                      className={`text-[10px] mt-1 ${
-                        isOwn ? "text-primary-foreground/60" : "text-muted-foreground"
-                      }`}
+                      className={`text-[10px] mt-1 ${isOwn
+                          ? "text-primary-foreground/60"
+                          : "text-muted-foreground"
+                        }`}
                     >
                       {formatMessageTime(msg.createdAt)}
                     </p>
@@ -183,8 +230,15 @@ export default function MessageThread({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Typing indicator */}
+      {typingUser && (
+        <div className="px-4 py-1 text-xs text-muted-foreground italic border-t">
+          {typingUser} is typing...
+        </div>
+      )}
+
       {/* Input bar */}
-      <MessageInput onSend={handleSendMessage} />
+      <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
     </div>
   );
 }

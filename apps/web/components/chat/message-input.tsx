@@ -4,12 +4,14 @@ import { useState, useRef, useEffect } from "react";
 
 interface MessageInputProps {
   onSend: (content: string) => Promise<void>;
+  onTyping?: () => void;
 }
 
-export default function MessageInput({ onSend }: MessageInputProps) {
+export default function MessageInput({ onSend, onTyping }: MessageInputProps) {
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -19,6 +21,17 @@ export default function MessageInput({ onSend }: MessageInputProps) {
       ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
     }
   }, [content]);
+
+  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    setContent(e.target.value);
+
+    // Emit typing indicator (debounced)
+    if (onTyping) {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      onTyping();
+      typingTimeoutRef.current = setTimeout(() => {}, 2000);
+    }
+  }
 
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault();
@@ -50,7 +63,7 @@ export default function MessageInput({ onSend }: MessageInputProps) {
       <textarea
         ref={textareaRef}
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder="Type a message..."
         className="flex-1 resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[40px] max-h-[120px]"
