@@ -53,18 +53,18 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                     <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
 
                     {/* Sidebar Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-white/10 relative z-10 h-[72px]">
-                        <AnimatePresence mode="popLayout">
+                    <div className="flex items-center p-4 border-b border-white/10 relative z-10 h-[72px]">
+                        <PawPrint className="w-6 h-6 text-primary drop-shadow-sm flex-shrink-0" />
+                        <AnimatePresence>
                             {sidebarOpen && (
                                 <motion.div
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -10 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="flex items-center gap-2 overflow-hidden"
+                                    initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                    animate={{ opacity: 1, width: "auto", marginLeft: 8 }}
+                                    exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                    className="overflow-hidden whitespace-nowrap"
                                 >
-                                    <PawPrint className="w-6 h-6 text-primary drop-shadow-sm flex-shrink-0" />
-                                    <span className="font-bold text-lg bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent whitespace-nowrap">
+                                    <span className="font-bold text-lg bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
                                         WildChat
                                     </span>
                                 </motion.div>
@@ -91,7 +91,7 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 w-full ${
+                                    className={`flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 w-full ${
                                         isActive
                                             ? "bg-gradient-to-br from-primary/90 to-primary/70 text-primary-foreground shadow-[0_4px_20px_-4px_rgba(128,0,0,0.4)] translate-x-1"
                                             : "text-muted-foreground hover:bg-white/10 hover:text-foreground hover:translate-x-1"
@@ -101,13 +101,13 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                                     <div className={`transition-transform duration-300 flex-shrink-0 ${isActive ? "scale-110 drop-shadow-md" : ""}`}>
                                         <item.icon className="w-5 h-5" />
                                     </div>
-                                    <AnimatePresence mode="popLayout">
+                                    <AnimatePresence>
                                         {sidebarOpen && (
                                             <motion.span
-                                                initial={{ opacity: 0, width: 0 }}
-                                                animate={{ opacity: 1, width: "auto" }}
-                                                exit={{ opacity: 0, width: 0 }}
-                                                transition={{ duration: 0.2 }}
+                                                initial={{ opacity: 0, width: 0, paddingLeft: 0 }}
+                                                animate={{ opacity: 1, width: "auto", paddingLeft: 12 }}
+                                                exit={{ opacity: 0, width: 0, paddingLeft: 0 }}
+                                                transition={{ duration: 0.3, ease: "easeInOut" }}
                                                 className="drop-shadow-sm whitespace-nowrap overflow-hidden"
                                             >
                                                 {item.label}
@@ -121,47 +121,51 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
 
                     {/* User Section */}
                     <div className="border-t border-white/10 p-4 relative z-10 bg-white/5 backdrop-blur-md overflow-hidden">
-                        <div className={`flex items-center gap-3 ${!sidebarOpen && "justify-center flex-col"}`}>
+                        <div className={`flex items-center ${!sidebarOpen ? "justify-center flex-col" : ""}`}>
                             {user.avatarUrl ? (
                                 <img
                                     src={user.avatarUrl}
                                     alt={user.name}
-                                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20 shadow-lg flex-shrink-0"
+                                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20 shadow-lg flex-shrink-0 z-10"
                                 />
                             ) : (
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg ring-2 ring-white/20 flex-shrink-0 ${getUserAvatarGradient(user.name)}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg ring-2 ring-white/20 flex-shrink-0 z-10 ${getUserAvatarGradient(user.name)}`}>
                                     {initials}
                                 </div>
                             )}
                             
-                            <AnimatePresence mode="popLayout">
-                                {sidebarOpen ? (
+                            <AnimatePresence>
+                                {sidebarOpen && (
                                     <motion.div
                                         key="expanded-profile"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="flex-1 min-w-0"
+                                        initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                        animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
+                                        exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        className="flex-1 min-w-0 overflow-hidden"
                                     >
                                         <p className="text-sm font-semibold truncate drop-shadow-sm">{user.name}</p>
                                         <button
-                                            onClick={() => signOut({ callbackUrl: "/auth" })}
-                                            className="text-xs text-muted-foreground hover:text-destructive transition-colors font-medium mt-0.5 flex items-center gap-1"
+                                            onClick={() => signOut({ callbackUrl: "/" })}
+                                            className="text-xs text-muted-foreground hover:text-destructive transition-colors font-medium mt-0.5 flex items-center gap-1 whitespace-nowrap"
                                         >
                                             <LogOut className="w-3 h-3" />
                                             Sign out
                                         </button>
                                     </motion.div>
-                                ) : (
+                                )}
+                            </AnimatePresence>
+
+                            <AnimatePresence>
+                                {!sidebarOpen && (
                                     <motion.button
                                         key="collapsed-logout"
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.8 }}
-                                        transition={{ duration: 0.2 }}
-                                        onClick={() => signOut({ callbackUrl: "/auth" })}
-                                        className="p-2 mt-2 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0"
+                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        onClick={() => signOut({ callbackUrl: "/" })}
+                                        className="p-2 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0 overflow-hidden"
                                         title="Sign out"
                                     >
                                         <LogOut className="w-4 h-4" />

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PawPrint, Sparkles, Eye, EyeOff } from "lucide-react";
+import { PawPrint, Sparkles, Eye, EyeOff, ChevronLeft } from "lucide-react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AuthPage() {
@@ -148,6 +149,11 @@ export default function AuthPage() {
             <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob pointer-events-none"></div>
             <div className="absolute top-1/4 -right-20 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000 pointer-events-none"></div>
             <div className="absolute -bottom-20 left-1/3 w-96 h-96 bg-accent/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-4000 pointer-events-none"></div>
+
+            <Link href="/" className="absolute top-6 left-6 z-20 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors bg-white/5 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full shadow-lg hover:bg-white/10 hover:-translate-x-1 duration-300">
+                <ChevronLeft className="w-4 h-4" />
+                <span className="text-sm font-medium">Back to Home</span>
+            </Link>
 
             <div className="w-full max-w-md glass-card rounded-[2rem] p-8 shadow-2xl relative z-10 overflow-hidden">
                 <AnimatePresence mode="wait">
