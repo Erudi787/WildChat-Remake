@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import MessageInput from "./message-input";
 import { useSocket, SocketMessage } from "@/hooks/use-socket";
+import { Skeleton } from "@/components/ui/skeleton";
+import TypingIndicator from "./typing-indicator";
 
 interface MessageSender {
   id: string;
@@ -92,9 +94,28 @@ export default function MessageThread({
     return () => clearInterval(interval);
   }, [fetchMessages, connected]);
 
-  // Auto-scroll
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialLoad = useRef(true);
+
+  // Auto-scroll smarter logic
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+
+    if (isInitialLoad.current && messages.length > 0) {
+      // First load: instantly snap to bottom
+      messagesEndRef.current?.scrollIntoView();
+      // Use a short timeout to ensure layout has painted before turning off initial load flag
+      setTimeout(() => {
+        isInitialLoad.current = false;
+      }, 100);
+    } else if (isNearBottom) {
+      // New message while at bottom: smooth scroll
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   // Mark as read
@@ -151,8 +172,31 @@ export default function MessageThread({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        Loading messages...
+      <div className="flex flex-col h-full p-4 space-y-6">
+        {[1, 2, 3, 4].map((i) => {
+          const isOwn = i % 2 !== 0;
+          return (
+            <div
+              key={i}
+              className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[70%] space-y-1 flex flex-col ${
+                  isOwn ? "items-end" : "items-start"
+                }`}
+              >
+                {!isOwn && <Skeleton className="h-3 w-16 mb-1" />}
+                <Skeleton
+                  className={`h-10 rounded-2xl ${
+                    i === 1 ? "w-48" : i === 2 ? "w-64" : i === 3 ? "w-32" : "w-56"
+                  } ${
+                    isOwn ? "rounded-br-md" : "rounded-bl-md"
+                  }`}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -167,13 +211,16 @@ export default function MessageThread({
       )}
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-1">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-1">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <div className="text-center">
-              <div className="text-4xl mb-2">👋</div>
-              <p className="text-sm">
-                Send a message to start the conversation!
+          <div className="flex items-center justify-center h-full animate-in fade-in duration-500 delay-150 fill-mode-both">
+            <div className="text-center flex flex-col items-center">
+              <div className="w-20 h-20 bg-accent/20 text-accent-foreground rounded-full flex items-center justify-center mb-4 shadow-sm">
+                <span className="text-4xl translate-x-1">👋</span>
+              </div>
+              <p className="text-sm font-medium text-foreground">Say hello!</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Send a message to start the conversation
               </p>
             </div>
           </div>
@@ -185,8 +232,8 @@ export default function MessageThread({
             return (
               <div key={msg.id}>
                 {showDate && (
-                  <div className="flex items-center justify-center my-4">
-                    <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                  <div className="flex items-center justify-center my-6 sticky top-2 z-10 pointer-events-none">
+                    <span className="text-[11px] font-medium text-muted-foreground bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full border shadow-sm">
                       {new Date(msg.createdAt).toLocaleDateString(undefined, {
                         weekday: "long",
                         month: "short",
@@ -197,26 +244,26 @@ export default function MessageThread({
                 )}
                 <div
                   className={`flex ${isOwn ? "justify-end" : "justify-start"
-                    } mb-1`}
+                    } mb-1 group/msg`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${isOwn
-                        ? "bg-primary text-primary-foreground rounded-br-md"
-                        : "bg-muted rounded-bl-md"
+                    className={`max-w-[75%] rounded-2xl px-4 py-2 shadow-sm transition-all ${isOwn
+                        ? "bg-gradient-to-br from-primary to-primary/95 text-primary-foreground rounded-br-[4px] group-hover/msg:shadow-md"
+                        : "bg-card border shadow-sm rounded-bl-[4px] group-hover/msg:shadow-md"
                       }`}
                   >
                     {!isOwn && (
-                      <p className="text-xs font-medium mb-0.5 opacity-70">
+                      <p className="text-xs font-semibold mb-0.5 opacity-80 text-primary">
                         {msg.sender.displayName}
                       </p>
                     )}
-                    <p className="text-sm whitespace-pre-wrap break-words">
+                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                       {msg.content}
                     </p>
                     <p
-                      className={`text-[10px] mt-1 ${isOwn
-                          ? "text-primary-foreground/60"
-                          : "text-muted-foreground"
+                      className={`text-[10px] mt-1 select-none flex justify-end ${isOwn
+                          ? "text-primary-foreground/70"
+                          : "text-muted-foreground/70"
                         }`}
                     >
                       {formatMessageTime(msg.createdAt)}
@@ -227,18 +274,22 @@ export default function MessageThread({
             );
           })
         )}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-2" />
       </div>
 
       {/* Typing indicator */}
-      {typingUser && (
-        <div className="px-4 py-1 text-xs text-muted-foreground italic border-t">
-          {typingUser} is typing...
-        </div>
-      )}
+      <div className="relative">
+        {typingUser && (
+          <div className="absolute bottom-full left-0 right-0 pt-4 pb-1 z-10">
+            <TypingIndicator name={typingUser} />
+          </div>
+        )}
+      </div>
 
       {/* Input bar */}
-      <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
+      <div className="relative z-20">
+        <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
+      </div>
     </div>
   );
 }

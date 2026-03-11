@@ -56,12 +56,14 @@ export default function MessagesPage() {
             />
           </>
         ) : (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <div className="text-center">
-              <div className="text-5xl mb-3">💬</div>
-              <p className="text-lg font-medium">Select a conversation</p>
-              <p className="text-sm mt-1">
-                Or search for a user to start chatting
+          <div className="flex items-center justify-center h-full bg-muted/20 animate-in fade-in duration-500">
+            <div className="text-center flex flex-col items-center max-w-sm px-6">
+              <div className="w-24 h-24 bg-primary/5 text-primary rounded-full flex items-center justify-center mb-6 shadow-sm ring-1 ring-primary/10">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>
+              </div>
+              <p className="text-xl font-semibold text-foreground mb-2">Your Messages</p>
+              <p className="text-sm text-muted-foreground">
+                Select an existing conversation from the list to continue chatting, or search for someone new to send your first message.
               </p>
             </div>
           </div>

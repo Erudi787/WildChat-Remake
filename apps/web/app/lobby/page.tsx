@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getUserAvatarGradient } from "@/lib/utils";
 
 export default async function LobbyHomePage() {
   const session = await auth();
@@ -63,7 +64,7 @@ export default async function LobbyHomePage() {
   return (
     <div className="p-6 md:p-8 max-w-3xl mx-auto space-y-8">
       {/* Welcome header */}
-      <div>
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
         <h1 className="text-3xl font-bold">
           Welcome back, {profile?.displayName || "Wildcat"} 🐾
         </h1>
@@ -73,27 +74,30 @@ export default async function LobbyHomePage() {
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="rounded-lg border bg-card p-4">
-          <p className="text-2xl font-bold">{totalConversations}</p>
-          <p className="text-xs text-muted-foreground">Conversations</p>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
+        <div className="rounded-lg border bg-card p-4 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-2xl font-bold relative z-10">{totalConversations}</p>
+          <p className="text-xs text-muted-foreground relative z-10">Conversations</p>
         </div>
-        <div className="rounded-lg border bg-card p-4">
-          <p className="text-2xl font-bold">{totalMessages}</p>
-          <p className="text-xs text-muted-foreground">Messages Sent</p>
+        <div className="rounded-lg border bg-card p-4 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-2xl font-bold relative z-10">{totalMessages}</p>
+          <p className="text-xs text-muted-foreground relative z-10">Messages Sent</p>
         </div>
-        <div className="rounded-lg border bg-card p-4 col-span-2 md:col-span-1">
-          <p className="text-2xl font-bold">
+        <div className="rounded-lg border bg-card p-4 col-span-2 md:col-span-1 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <p className="text-2xl font-bold relative z-10">
             {profile?.bio ? "✅" : "📝"}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground relative z-10">
             {profile?.bio ? "Profile Complete" : "Add a bio in Settings"}
           </p>
         </div>
       </div>
 
       {/* Recent conversations */}
-      <div>
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 fill-mode-both">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold">Recent Chats</h2>
           <Link
@@ -105,17 +109,17 @@ export default async function LobbyHomePage() {
         </div>
 
         {participations.length === 0 ? (
-          <div className="rounded-lg border bg-card p-6 text-center">
+          <div className="rounded-lg border bg-card p-6 text-center shadow-sm">
             <div className="text-3xl mb-2">💬</div>
-            <p className="text-sm text-muted-foreground">
-              No conversations yet.{" "}
-              <Link
-                href="/lobby/messages"
-                className="text-primary hover:underline"
-              >
-                Start one!
-              </Link>
+            <p className="text-sm text-muted-foreground mb-4">
+              Your inbox is quiet right now.
             </p>
+            <Link
+              href="/lobby/messages"
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+            >
+              Start a Conversation
+            </Link>
           </div>
         ) : (
           <div className="space-y-2">
@@ -130,7 +134,7 @@ export default async function LobbyHomePage() {
                 <Link
                   key={conv.id}
                   href="/lobby/messages"
-                  className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-muted/50 transition-colors"
+                  className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-accent/10 transition-colors shadow-sm"
                 >
                   {other?.profile?.avatarUrl ? (
                     <img
@@ -139,7 +143,7 @@ export default async function LobbyHomePage() {
                       className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full gradient-maroon-gold flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-inner ${getUserAvatarGradient(other?.username || "?")}`}>
                       {displayName[0].toUpperCase()}
                     </div>
                   )}
@@ -169,19 +173,19 @@ export default async function LobbyHomePage() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both">
         <Link
           href="/lobby/messages"
-          className="rounded-lg border bg-card p-4 hover:bg-muted/50 transition-colors text-center"
+          className="rounded-lg border bg-card p-4 hover:shadow-md transition-all text-center group"
         >
-          <div className="text-2xl mb-1">💬</div>
+          <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">💬</div>
           <p className="text-sm font-medium">Messages</p>
         </Link>
         <Link
           href="/lobby/settings"
-          className="rounded-lg border bg-card p-4 hover:bg-muted/50 transition-colors text-center"
+          className="rounded-lg border bg-card p-4 hover:shadow-md transition-all text-center group"
         >
-          <div className="text-2xl mb-1">⚙️</div>
+          <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">⚙️</div>
           <p className="text-sm font-medium">Settings</p>
         </Link>
       </div>

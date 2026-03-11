@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getUserAvatarGradient } from "@/lib/utils";
 
 interface LobbyShellProps {
     user: {
@@ -89,7 +90,7 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                                 className="w-9 h-9 rounded-full object-cover"
                             />
                         ) : (
-                            <div className="w-9 h-9 rounded-full gradient-maroon-gold flex items-center justify-center text-white text-xs font-bold">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-inner ${getUserAvatarGradient(user.name)}`}>
                                 {initials}
                             </div>
                         )}
