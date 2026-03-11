@@ -1,75 +1,77 @@
-# WildChat – Love Purrs Around Campus
+# WildChat – Love Purrs Around Campus 🐾
 
-Modern rebuild of the legacy WildChat campus-based real-time chat application. Built as a monorepo with web (Next.js) and mobile (Expo) clients sharing APIs and types.
+**WildChat** is a real-time, campus-based messaging platform designed for a university community. This project is a modern, monorepo rebuild of a legacy application, demonstrating scalable full-stack architecture, real-time WebSocket communication, and modern UI/UX principles.
 
-## Project Structure
+## 🚀 Features
+
+- **Real-Time Messaging**: Built with an Express + Socket.IO microservice for instant, reliable message delivery, typing indicators, and real-time read receipts.
+- **Secure Authentication**: NextAuth.js (v5) implementation with JWT sessions and robust password hashing (bcryptjs).
+- **Comprehensive User Profiles**: Customizable profiles with avatars, bios, and personalized settings.
+- **Responsive Split-Pane UI**: A dynamic, mobile-friendly chat interface featuring conversation lists, unread message counts, and auto-scrolling message threads.
+- **Dual-Database Strategy**: Configured to work out-of-the-box with either a serverless cloud provider (Neon PostgreSQL) or a local Dockerized PostgreSQL instance for flexible deployment and local testing.
+- **Automated CI Pipeline**: GitHub Actions workflow for type-checking and automated unit testing (Vitest).
+
+## 🛠 Tech Stack
+
+- **Monorepo**: Turborepo
+- **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS, shadcn/ui
+- **Backend APIs**: Next.js Route Handlers (RESTful)
+- **Real-time Gateway**: Node.js, Express, Socket.IO (custom microservice)
+- **Database**: PostgreSQL (Neon Cloud / Local Docker)
+- **ORM**: Prisma
+- **Validation**: Zod (shared types between frontend and backend)
+- **Testing**: Vitest, @testing-library
+
+## 📂 Project Structure
 
 ```
 WildChat-Remake/
 ├── apps/
-│   ├── web/          # Next.js 15 + Tailwind + shadcn/ui
-│   └── mobile/       # Expo with Expo Router
+│   ├── web/          # Next.js 15 + Tailwind frontend and REST APIs
+│   ├── realtime/     # Node.js + Socket.IO microservice
+│   └── mobile/       # Expo React Native client (Planned)
 ├── packages/
 │   ├── types/        # Shared DTOs, Zod schemas, API contracts
-│   └── api-client/   # Typed fetch wrapper for web and mobile
-├── package.json      # Root workspace config
-└── turbo.json        # Turborepo task config
+│   └── api-client/   # Typed fetch wrapper
+└── .github/          # CI workflows
 ```
 
-## Prerequisites
+## 💻 Local Setup (Development)
 
-- Node.js 20+
-- npm 9+ (or pnpm)
-- PostgreSQL (for web app; use Supabase/Neon for hosted)
-
-## Setup
-
-1. **Install dependencies**
-
+1. **Clone & Install**
    ```bash
+   git clone https://github.com/yourusername/WildChat-Remake.git
+   cd WildChat-Remake
    npm install
    ```
 
-2. **Configure environment (web app)**
-
-   Copy the example env and set your values:
-
+2. **Database Configuration**
+   Copy the example environment files in both the `web` and `realtime` apps:
    ```bash
    cp apps/web/.env.example apps/web/.env
+   cp apps/realtime/.env.example apps/realtime/.env  # if applicable
    ```
+   > **Note:** The project provides a `docker-compose.yml` file. You can run `docker compose up -d` to spin up a local PostgreSQL database, or use a cloud database string in `DATABASE_URL`.
 
-   Edit `apps/web/.env`:
-
-   - `DATABASE_URL` – PostgreSQL connection string
-   - `AUTH_SECRET` – Generate with `openssl rand -base64 32`
-   - `NEXTAUTH_URL` – e.g. `http://localhost:3000`
-
-3. **Initialize database**
-
+3. **Initialize Prisma**
    ```bash
-   cd apps/web && npx prisma db push
+   cd apps/web
+   npx prisma db push
+   npx prisma generate
+   cd ../..
    ```
 
-## Development
+4. **Run the Application**
+   Start both the Next.js web application and the Realtime Socket.IO server simultaneously using Turborepo:
+   ```bash
+   npm run dev
+   ```
 
-- **Web**: `npm run dev` (from root) or `cd apps/web && npm run dev`
-- **Mobile**: `cd apps/mobile && npm run start`
+## 🌩 Deployment
 
-## Build
+- **Web App**: Designed to be deployed on serverless platforms like **Vercel**. Ensure all environment variables (`DATABASE_URL`, `AUTH_SECRET`, `NEXT_PUBLIC_REALTIME_URL`) are configured in the Vercel dashboard.
+- **Realtime Server**: Must be deployed to a stateful container/VM service that supports WebSockets (e.g., Railway, Render, Fly.io, or AWS ECS), allowing persistent socket connections.
 
-- **Web**: `cd apps/web && npm run build`
-- **Mobile**: `cd apps/mobile && npx expo export` (or EAS Build for native)
+## 📝 License
 
-> **Note**: Next.js 15 production build may fail with a `useContext` prerender error on 404/500 pages in some environments. Development mode works correctly. This is a known upstream issue (Next.js + React 19 + monorepo). Use `npm run dev` for local development.
-
-## Phase 0 Status
-
-- [x] Turborepo monorepo with apps/web and apps/mobile
-- [x] Shared packages: types, api-client
-- [x] Next.js with Tailwind, shadcn/ui, Prisma, Auth.js (credentials provider)
-- [x] Expo app with Expo Router
-- [x] Base layout and routing for web and mobile
-
-## License
-
-See [LICENSE](LICENSE).
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
