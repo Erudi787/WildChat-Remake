@@ -21,7 +21,7 @@ export default async function HomePage() {
           A campus chat experience for CIT-U Wildcats
         </p>
         <div className="flex gap-4 justify-center mt-8">
-          <Link href="/auth/login">
+          <Link href="/auth">
             <Button
               variant="outline"
               size="lg"
@@ -30,7 +30,7 @@ export default async function HomePage() {
               Sign In
             </Button>
           </Link>
-          <Link href="/auth/register">
+          <Link href="/auth">
             <Button
               size="lg"
               className="bg-white text-primary hover:bg-white/90"

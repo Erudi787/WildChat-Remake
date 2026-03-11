@@ -11,7 +11,7 @@ export default async function LobbyLayout({
     const session = await auth();
 
     if (!session?.user?.id) {
-        redirect("/auth/login");
+        redirect("/auth");
     }
 
     // Check if user has completed onboarding

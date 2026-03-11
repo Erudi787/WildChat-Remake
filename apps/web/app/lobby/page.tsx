@@ -7,7 +7,7 @@ import { getUserAvatarGradient } from "@/lib/utils";
 export default async function LobbyHomePage() {
   const session = await auth();
   if (!session?.user?.id) {
-    redirect("/auth/login");
+    redirect("/auth");
   }
 
   const userId = session.user.id;
