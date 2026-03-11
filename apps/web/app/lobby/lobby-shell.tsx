@@ -54,22 +54,24 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
 
                     {/* Sidebar Header */}
                     <div className="flex items-center p-4 border-b border-white/10 relative z-10 h-[72px]">
-                        <PawPrint className="w-6 h-6 text-primary drop-shadow-sm flex-shrink-0" />
-                        <AnimatePresence>
-                            {sidebarOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, width: 0, marginLeft: 0 }}
-                                    animate={{ opacity: 1, width: "auto", marginLeft: 8 }}
-                                    exit={{ opacity: 0, width: 0, marginLeft: 0 }}
-                                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                                    className="overflow-hidden whitespace-nowrap"
-                                >
-                                    <span className="font-bold text-lg bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
-                                        WildChat
-                                    </span>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        <Link href="/" className="flex items-center gap-0 hover:opacity-80 transition-opacity">
+                            <PawPrint className="w-6 h-6 text-primary drop-shadow-sm flex-shrink-0" />
+                            <AnimatePresence>
+                                {sidebarOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                        animate={{ opacity: 1, width: "auto", marginLeft: 8 }}
+                                        exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        className="overflow-hidden whitespace-nowrap"
+                                    >
+                                        <span className="font-bold text-lg bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
+                                            WildChat
+                                        </span>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </Link>
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
                             className="p-1.5 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground backdrop-blur-sm flex-shrink-0 ml-auto"
