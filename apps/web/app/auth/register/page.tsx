@@ -7,14 +7,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -107,28 +99,33 @@ export default function RegisterPage() {
     const hasError = (field: string) => fieldError === field;
 
     return (
-        <main className="flex min-h-screen items-center justify-center p-4 gradient-maroon-gold">
-            <Card className="w-full max-w-md shadow-xl border-0">
-                <CardHeader className="text-center space-y-2">
-                    <div className="mx-auto mb-2">
-                        <span className="text-4xl">🐾</span>
+        <main className="flex min-h-screen items-center justify-center p-4 bg-background relative overflow-hidden selection:bg-primary/20">
+            {/* Ambient Background Blobs */}
+            <div className="absolute top-1/4 -right-20 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob pointer-events-none"></div>
+            <div className="absolute top-1/4 -left-20 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000 pointer-events-none"></div>
+            <div className="absolute -bottom-20 right-1/3 w-96 h-96 bg-accent/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-4000 pointer-events-none"></div>
+
+            <div className="w-full max-w-md glass-card rounded-[2rem] p-8 shadow-2xl relative z-10 my-8">
+                <div className="text-center space-y-3 mb-8">
+                    <div className="mx-auto bg-gradient-to-br from-primary/10 to-accent/10 w-16 h-16 rounded-full flex items-center justify-center shadow-inner mb-4 ring-2 ring-white/20">
+                        <span className="text-3xl drop-shadow-sm">✨</span>
                     </div>
-                    <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-                    <CardDescription>
-                        Join WildChat — Love Purrs Around Campus
-                    </CardDescription>
-                </CardHeader>
+                    <h1 className="text-3xl font-extrabold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">Create Account</h1>
+                    <p className="text-muted-foreground font-medium">
+                        Join WildChat today
+                    </p>
+                </div>
 
-                <form onSubmit={handleSubmit}>
-                    <CardContent className="space-y-4">
-                        {error && (
-                            <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-                                {error}
-                            </div>
-                        )}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && (
+                        <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium text-center shadow-sm">
+                            {error}
+                        </div>
+                    )}
 
+                    <div className="space-y-5">
                         <div className="space-y-2">
-                            <Label htmlFor="username">Username</Label>
+                            <Label htmlFor="username" className="text-foreground/80 font-semibold ml-1">Username</Label>
                             <Input
                                 id="username"
                                 type="text"
@@ -138,12 +135,12 @@ export default function RegisterPage() {
                                 required
                                 autoComplete="username"
                                 autoFocus
-                                className={hasError("username") ? "border-destructive" : ""}
+                                className={`rounded-full bg-white/50 dark:bg-black/20 border-white/20 shadow-inner px-5 h-12 focus-visible:ring-primary/30 ${hasError("username") ? "border-destructive ring-1 ring-destructive" : ""}`}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
+                            <Label htmlFor="email" className="text-foreground/80 font-semibold ml-1">Email</Label>
                             <Input
                                 id="email"
                                 type="email"
@@ -152,12 +149,12 @@ export default function RegisterPage() {
                                 onChange={(e) => updateField("email", e.target.value)}
                                 required
                                 autoComplete="email"
-                                className={hasError("email") ? "border-destructive" : ""}
+                                className={`rounded-full bg-white/50 dark:bg-black/20 border-white/20 shadow-inner px-5 h-12 focus-visible:ring-primary/30 ${hasError("email") ? "border-destructive ring-1 ring-destructive" : ""}`}
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password" className="text-foreground/80 font-semibold ml-1">Password</Label>
                             <div className="relative">
                                 <Input
                                     id="password"
@@ -167,11 +164,11 @@ export default function RegisterPage() {
                                     onChange={(e) => updateField("password", e.target.value)}
                                     required
                                     autoComplete="new-password"
-                                    className={hasError("password") ? "border-destructive" : ""}
+                                    className={`rounded-full bg-white/50 dark:bg-black/20 border-white/20 shadow-inner px-5 h-12 focus-visible:ring-primary/30 pr-12 ${hasError("password") ? "border-destructive ring-1 ring-destructive" : ""}`}
                                 />
                                 <button
                                     type="button"
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors text-xs font-semibold uppercase tracking-wider bg-white/50 dark:bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm"
                                     onClick={() => setShowPassword(!showPassword)}
                                     tabIndex={-1}
                                 >
@@ -181,7 +178,7 @@ export default function RegisterPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="confirmPassword">Confirm Password</Label>
+                            <Label htmlFor="confirmPassword" className="text-foreground/80 font-semibold ml-1">Confirm Password</Label>
                             <Input
                                 id="confirmPassword"
                                 type={showPassword ? "text" : "password"}
@@ -190,17 +187,15 @@ export default function RegisterPage() {
                                 onChange={(e) => updateField("confirmPassword", e.target.value)}
                                 required
                                 autoComplete="new-password"
-                                className={
-                                    hasError("confirmPassword") ? "border-destructive" : ""
-                                }
+                                className={`rounded-full bg-white/50 dark:bg-black/20 border-white/20 shadow-inner px-5 h-12 focus-visible:ring-primary/30 ${hasError("confirmPassword") ? "border-destructive ring-1 ring-destructive" : ""}`}
                             />
                         </div>
-                    </CardContent>
+                    </div>
 
-                    <CardFooter className="flex flex-col space-y-3">
+                    <div className="flex flex-col space-y-4 pt-2">
                         <Button
                             type="submit"
-                            className="w-full"
+                            className="w-full rounded-full h-12 font-bold text-base shadow-lg hover:shadow-primary/25 hover:scale-[1.02] bg-gradient-to-r from-primary to-accent transition-all"
                             disabled={
                                 loading ||
                                 !form.username ||
@@ -211,18 +206,18 @@ export default function RegisterPage() {
                         >
                             {loading ? "Creating account..." : "Create Account"}
                         </Button>
-                        <p className="text-sm text-muted-foreground text-center">
+                        <p className="text-sm text-muted-foreground text-center font-medium">
                             Already have an account?{" "}
                             <Link
                                 href="/auth/login"
-                                className="text-primary font-medium hover:underline"
+                                className="text-primary hover:text-accent font-bold transition-colors"
                             >
                                 Sign in
                             </Link>
                         </p>
-                    </CardFooter>
+                    </div>
                 </form>
-            </Card>
+            </div>
         </main>
     );
 }

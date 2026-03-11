@@ -7,14 +7,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -58,28 +50,33 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4 gradient-maroon-gold">
-      <Card className="w-full max-w-md shadow-xl border-0">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto mb-2">
-            <span className="text-4xl">🐾</span>
+    <main className="flex min-h-screen items-center justify-center p-4 bg-background relative overflow-hidden selection:bg-primary/20">
+      {/* Ambient Background Blobs */}
+      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob pointer-events-none"></div>
+      <div className="absolute top-1/4 -right-20 w-96 h-96 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000 pointer-events-none"></div>
+      <div className="absolute -bottom-20 left-1/3 w-96 h-96 bg-accent/20 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-4000 pointer-events-none"></div>
+
+      <div className="w-full max-w-md glass-card rounded-[2rem] p-8 shadow-2xl relative z-10">
+        <div className="text-center space-y-3 mb-8">
+          <div className="mx-auto bg-gradient-to-br from-primary/10 to-accent/10 w-20 h-20 rounded-full flex items-center justify-center shadow-inner mb-4 ring-2 ring-white/20">
+            <span className="text-4xl drop-shadow-sm">🐾</span>
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>
-            Sign in to WildChat — Love Purrs Around Campus
-          </CardDescription>
-        </CardHeader>
+          <h1 className="text-3xl font-extrabold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">Welcome Back</h1>
+          <p className="text-muted-foreground font-medium">
+            Sign in to WildChat
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
-                {error}
-              </div>
-            )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium text-center shadow-sm">
+              {error}
+            </div>
+          )}
 
+          <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="text-foreground/80 font-semibold ml-1">Username</Label>
               <Input
                 id="username"
                 type="text"
@@ -89,11 +86,12 @@ export default function LoginPage() {
                 required
                 autoComplete="username"
                 autoFocus
+                className="rounded-full bg-white/50 dark:bg-black/20 border-white/20 shadow-inner px-5 h-12 focus-visible:ring-primary/30"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-foreground/80 font-semibold ml-1">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -103,10 +101,11 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
+                  className="rounded-full bg-white/50 dark:bg-black/20 border-white/20 shadow-inner px-5 h-12 focus-visible:ring-primary/30 pr-12"
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors text-xs font-semibold uppercase tracking-wider bg-white/50 dark:bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
                 >
@@ -114,28 +113,28 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-          </CardContent>
+          </div>
 
-          <CardFooter className="flex flex-col space-y-3">
+          <div className="flex flex-col space-y-4 pt-2">
             <Button
               type="submit"
-              className="w-full"
+              className="w-full rounded-full h-12 font-bold text-base shadow-lg hover:shadow-primary/25 hover:scale-[1.02] bg-gradient-to-r from-primary to-accent transition-all"
               disabled={loading || !username || !password}
             >
               {loading ? "Signing in..." : "Sign In"}
             </Button>
-            <p className="text-sm text-muted-foreground text-center">
+            <p className="text-sm text-muted-foreground text-center font-medium">
               Don&apos;t have an account?{" "}
               <Link
                 href="/auth/register"
-                className="text-primary font-medium hover:underline"
+                className="text-primary hover:text-accent font-bold transition-colors"
               >
                 Create one
               </Link>
             </p>
-          </CardFooter>
+          </div>
         </form>
-      </Card>
+      </div>
     </main>
   );
 }

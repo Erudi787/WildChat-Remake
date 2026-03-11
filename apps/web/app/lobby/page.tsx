@@ -75,22 +75,25 @@ export default async function LobbyHomePage() {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100 fill-mode-both">
-        <div className="rounded-lg border bg-card p-4 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <p className="text-2xl font-bold relative z-10">{totalConversations}</p>
-          <p className="text-xs text-muted-foreground relative z-10">Conversations</p>
+        <div className="glass-card rounded-[1.25rem] p-5 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+          <p className="text-3xl font-bold relative z-10 bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent drop-shadow-sm">{totalConversations}</p>
+          <p className="text-sm font-medium text-muted-foreground relative z-10 mt-1">Conversations</p>
         </div>
-        <div className="rounded-lg border bg-card p-4 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <p className="text-2xl font-bold relative z-10">{totalMessages}</p>
-          <p className="text-xs text-muted-foreground relative z-10">Messages Sent</p>
+        <div className="glass-card rounded-[1.25rem] p-5 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-secondary/10 rounded-full blur-2xl group-hover:bg-secondary/20 transition-colors" />
+          <p className="text-3xl font-bold relative z-10 bg-gradient-to-br from-secondary to-accent bg-clip-text text-transparent drop-shadow-sm">{totalMessages}</p>
+          <p className="text-sm font-medium text-muted-foreground relative z-10 mt-1">Messages Sent</p>
         </div>
-        <div className="rounded-lg border bg-card p-4 col-span-2 md:col-span-1 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <p className="text-2xl font-bold relative z-10">
+        <div className="glass-card rounded-[1.25rem] p-5 col-span-2 md:col-span-1 relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-accent/10 rounded-full blur-2xl group-hover:bg-accent/20 transition-colors" />
+          <p className="text-3xl font-bold relative z-10 drop-shadow-sm">
             {profile?.bio ? "✅" : "📝"}
           </p>
-          <p className="text-xs text-muted-foreground relative z-10">
+          <p className="text-sm font-medium text-muted-foreground relative z-10 mt-1">
             {profile?.bio ? "Profile Complete" : "Add a bio in Settings"}
           </p>
         </div>
@@ -109,20 +112,26 @@ export default async function LobbyHomePage() {
         </div>
 
         {participations.length === 0 ? (
-          <div className="rounded-lg border bg-card p-6 text-center shadow-sm">
-            <div className="text-3xl mb-2">💬</div>
-            <p className="text-sm text-muted-foreground mb-4">
+          <div className="glass-card rounded-[1.25rem] p-8 text-center shadow-lg relative overflow-hidden group hover:-translate-y-1 transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+            <div className="w-16 h-16 mx-auto bg-primary/10 text-primary rounded-full flex items-center justify-center mb-4 shadow-inner ring-4 ring-primary/5">
+              <span className="text-3xl drop-shadow-sm">💬</span>
+            </div>
+            <p className="text-base font-semibold text-foreground mb-1 relative z-10">
               Your inbox is quiet right now.
+            </p>
+            <p className="text-sm text-muted-foreground mb-6 relative z-10">
+              Jump into the global directory and start chatting.
             </p>
             <Link
               href="/lobby/messages"
-              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-to-r from-primary to-accent px-6 py-2 text-sm font-bold text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-primary/30 relative z-10"
             >
               Start a Conversation
             </Link>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {participations.map((p) => {
               const conv = p.conversation;
               const other = conv.participants[0]?.user;
@@ -134,37 +143,39 @@ export default async function LobbyHomePage() {
                 <Link
                   key={conv.id}
                   href="/lobby/messages"
-                  className="flex items-center gap-3 rounded-lg border bg-card p-3 hover:bg-accent/10 transition-colors shadow-sm"
+                  className="flex items-center gap-4 rounded-[1.25rem] glass-panel p-4 hover:bg-white/60 dark:hover:bg-black/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 group"
                 >
                   {other?.profile?.avatarUrl ? (
                     <img
                       src={other.profile.avatarUrl}
                       alt=""
-                      className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                      className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-white/20 shadow-sm group-hover:scale-105 transition-transform"
                     />
                   ) : (
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-inner ${getUserAvatarGradient(other?.username || "?")}`}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-base font-bold flex-shrink-0 shadow-sm ring-2 ring-white/20 group-hover:scale-105 transition-transform ${getUserAvatarGradient(other?.username || "?")}`}>
                       {displayName[0].toUpperCase()}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
+                    <p className="text-[15px] font-semibold truncate group-hover:text-primary transition-colors">
                       {displayName}
                     </p>
                     {lastMsg ? (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {lastMsg.senderId === userId ? "You: " : ""}
+                      <p className="text-sm text-muted-foreground truncate opacity-90">
+                        <span className="font-medium opacity-70">{lastMsg.senderId === userId ? "You: " : ""}</span>
                         {lastMsg.content}
                       </p>
                     ) : (
-                      <p className="text-xs text-muted-foreground italic">
+                      <p className="text-sm text-muted-foreground italic opacity-70">
                         No messages yet
                       </p>
                     )}
                   </div>
-                  <span className="text-xs text-muted-foreground flex-shrink-0">
-                    {conv._count.messages} msgs
-                  </span>
+                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
+                      {conv._count.messages} msgs
+                    </span>
+                  </div>
                 </Link>
               );
             })}
@@ -176,17 +187,19 @@ export default async function LobbyHomePage() {
       <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300 fill-mode-both">
         <Link
           href="/lobby/messages"
-          className="rounded-lg border bg-card p-4 hover:shadow-md transition-all text-center group"
+          className="glass-card rounded-[1.25rem] p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center group relative overflow-hidden"
         >
-          <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">💬</div>
-          <p className="text-sm font-medium">Messages</p>
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="text-3xl mb-2 group-hover:scale-110 group-hover:-rotate-6 transition-transform drop-shadow-md relative z-10">💬</div>
+          <p className="text-sm font-bold relative z-10">Messages directly</p>
         </Link>
         <Link
           href="/lobby/settings"
-          className="rounded-lg border bg-card p-4 hover:shadow-md transition-all text-center group"
+          className="glass-card rounded-[1.25rem] p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center group relative overflow-hidden"
         >
-          <div className="text-2xl mb-1 group-hover:scale-110 transition-transform">⚙️</div>
-          <p className="text-sm font-medium">Settings</p>
+          <div className="absolute inset-0 bg-gradient-to-t from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="text-3xl mb-2 group-hover:scale-110 group-hover:rotate-6 transition-transform drop-shadow-md relative z-10">⚙️</div>
+          <p className="text-sm font-bold relative z-10">Account Settings</p>
         </Link>
       </div>
     </div>

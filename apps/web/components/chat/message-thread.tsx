@@ -244,25 +244,25 @@ export default function MessageThread({
                 )}
                 <div
                   className={`flex ${isOwn ? "justify-end" : "justify-start"
-                    } mb-1 group/msg`}
+                    } mb-1.5 group/msg`}
                 >
                   <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2 shadow-sm transition-all ${isOwn
-                        ? "bg-gradient-to-br from-primary to-primary/95 text-primary-foreground rounded-br-[4px] group-hover/msg:shadow-md"
-                        : "bg-card border shadow-sm rounded-bl-[4px] group-hover/msg:shadow-md"
+                    className={`max-w-[75%] rounded-[1.25rem] px-5 py-2.5 shadow-sm transition-all relative overflow-hidden ${isOwn
+                        ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground rounded-br-sm shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),_0_2px_10px_rgba(128,0,0,0.2)] group-hover/msg:-translate-y-px group-hover/msg:shadow-md"
+                        : "glass-card rounded-bl-sm group-hover/msg:-translate-y-px group-hover/msg:shadow-md"
                       }`}
                   >
                     {!isOwn && (
-                      <p className="text-xs font-semibold mb-0.5 opacity-80 text-primary">
+                      <p className="text-[11px] font-bold mb-0.5 tracking-wide text-primary uppercase opacity-90">
                         {msg.sender.displayName}
                       </p>
                     )}
-                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                    <p className="text-[15px] whitespace-pre-wrap break-words leading-relaxed">
                       {msg.content}
                     </p>
                     <p
-                      className={`text-[10px] mt-1 select-none flex justify-end ${isOwn
-                          ? "text-primary-foreground/70"
+                      className={`text-[10px] mt-1 select-none flex justify-end font-medium ${isOwn
+                          ? "text-primary-foreground/80 mix-blend-plus-lighter"
                           : "text-muted-foreground/70"
                         }`}
                     >
