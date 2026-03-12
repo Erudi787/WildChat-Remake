@@ -71,7 +71,15 @@ export default function MessageThread({
       );
       const data = await res.json();
       if (data.messages) {
-        setMessages(data.messages.reverse());
+        const newMessages = data.messages.reverse();
+        setMessages((prev) => {
+          // Optimization: Only update state if the length or IDs actually changed
+          if (prev.length === newMessages.length && 
+              prev[prev.length - 1]?.id === newMessages[newMessages.length - 1]?.id) {
+            return prev;
+          }
+          return newMessages;
+        });
       }
     } catch (error) {
       console.error("Failed to fetch messages:", error);

@@ -54,8 +54,10 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
 
                     {/* Sidebar Header */}
                     <div className="flex items-center p-4 border-b border-white/10 relative z-10 h-[72px]">
-                        <Link href="/" className="flex items-center gap-0 hover:opacity-80 transition-opacity">
-                            <PawPrint className="w-6 h-6 text-primary drop-shadow-sm flex-shrink-0" />
+                        <Link href="/" className="flex items-center gap-0 hover:opacity-80 transition-opacity w-full overflow-hidden">
+                            <div className="w-[48px] h-[48px] flex items-center justify-center flex-shrink-0">
+                                <PawPrint className="w-6 h-6 text-primary drop-shadow-sm" />
+                            </div>
                             <AnimatePresence>
                                 {sidebarOpen && (
                                     <motion.div
@@ -74,7 +76,7 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                         </Link>
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-1.5 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground backdrop-blur-sm flex-shrink-0 ml-auto"
+                            className="p-1.5 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground backdrop-blur-sm flex-shrink-0 ml-auto absolute right-3"
                             aria-label="Toggle sidebar"
                         >
                             {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -100,20 +102,22 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                                     } ${!sidebarOpen && "justify-center px-0 translate-x-0 hover:translate-x-0"}`}
                                     title={!sidebarOpen ? item.label : undefined}
                                 >
-                                    <div className={`transition-transform duration-300 flex-shrink-0 ${isActive ? "scale-110 drop-shadow-md" : ""}`}>
+                                    <div className={`transition-transform duration-300 w-5 h-5 flex items-center justify-center flex-shrink-0 ${isActive ? "scale-110 drop-shadow-md" : ""}`}>
                                         <item.icon className="w-5 h-5" />
                                     </div>
                                     <AnimatePresence>
                                         {sidebarOpen && (
-                                            <motion.span
-                                                initial={{ opacity: 0, width: 0, paddingLeft: 0 }}
-                                                animate={{ opacity: 1, width: "auto", paddingLeft: 12 }}
-                                                exit={{ opacity: 0, width: 0, paddingLeft: 0 }}
+                                            <motion.div
+                                                initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                                animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
+                                                exit={{ opacity: 0, width: 0, marginLeft: 0 }}
                                                 transition={{ duration: 0.3, ease: "easeInOut" }}
-                                                className="drop-shadow-sm whitespace-nowrap overflow-hidden"
+                                                className="overflow-hidden whitespace-nowrap"
                                             >
-                                                {item.label}
-                                            </motion.span>
+                                                <span className="drop-shadow-sm">
+                                                    {item.label}
+                                                </span>
+                                            </motion.div>
                                         )}
                                     </AnimatePresence>
                                 </Link>
@@ -122,16 +126,16 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                     </nav>
 
                     {/* User Section */}
-                    <div className="border-t border-white/10 p-4 relative z-10 bg-white/5 backdrop-blur-md overflow-hidden">
-                        <div className={`flex items-center ${!sidebarOpen ? "justify-center flex-col" : ""}`}>
+                    <div className="p-4 relative z-10 w-full mb-2">
+                        <div className={`flex items-center rounded-2xl glass-card border border-white/10 dark:border-white/5 bg-white/5 p-2 shadow-lg ${!sidebarOpen ? "justify-center flex-col p-2" : ""}`}>
                             {user.avatarUrl ? (
                                 <img
                                     src={user.avatarUrl}
                                     alt={user.name}
-                                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20 shadow-lg flex-shrink-0 z-10"
+                                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/10 flex-shrink-0 z-10"
                                 />
                             ) : (
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg ring-2 ring-white/20 flex-shrink-0 z-10 ${getUserAvatarGradient(user.name)}`}>
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-white/10 flex-shrink-0 z-10 ${getUserAvatarGradient(user.name)}`}>
                                     {initials}
                                 </div>
                             )}
@@ -146,12 +150,12 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                                         transition={{ duration: 0.3, ease: "easeInOut" }}
                                         className="flex-1 min-w-0 overflow-hidden"
                                     >
-                                        <p className="text-sm font-semibold truncate drop-shadow-sm">{user.name}</p>
+                                        <p className="text-sm font-semibold truncate drop-shadow-sm leading-tight text-foreground">{user.name}</p>
                                         <button
                                             onClick={() => signOut({ callbackUrl: "/" })}
-                                            className="text-xs text-muted-foreground hover:text-destructive transition-colors font-medium mt-0.5 flex items-center gap-1 whitespace-nowrap"
+                                            className="text-xs text-muted-foreground hover:text-destructive transition-colors font-medium mt-1 flex items-center gap-1.5 whitespace-nowrap group"
                                         >
-                                            <LogOut className="w-3 h-3" />
+                                            <LogOut className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
                                             Sign out
                                         </button>
                                     </motion.div>
@@ -167,7 +171,7 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                                         exit={{ opacity: 0, height: 0, marginTop: 0 }}
                                         transition={{ duration: 0.3, ease: "easeInOut" }}
                                         onClick={() => signOut({ callbackUrl: "/" })}
-                                        className="p-2 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors flex-shrink-0 overflow-hidden"
+                                        className="p-1.5 rounded-xl bg-black/20 text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors flex-shrink-0 overflow-hidden"
                                         title="Sign out"
                                     >
                                         <LogOut className="w-4 h-4" />

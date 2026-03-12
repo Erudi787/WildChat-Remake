@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import SessionProvider from "@/components/session-provider";
 
+import SessionWatcher from "@/components/auth/session-watcher";
+
 export const metadata: Metadata = {
   title: "WildChat – Love Purrs Around Campus",
   description:
@@ -16,7 +18,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <SessionWatcher />
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );
