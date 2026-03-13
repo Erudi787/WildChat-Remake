@@ -38,6 +38,7 @@ interface ConversationListProps {
   activeConversationId?: string;
   onSelectConversation: (conversationId: string) => void;
   refreshKey?: number;
+  initialConversations?: ConversationItem[];
 }
 
 export default function ConversationList({
@@ -45,12 +46,13 @@ export default function ConversationList({
   activeConversationId,
   onSelectConversation,
   refreshKey,
+  initialConversations,
 }: ConversationListProps) {
-  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [conversations, setConversations] = useState<ConversationItem[]>(initialConversations || []);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [searching, setSearching] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialConversations);
 
   const fetchConversations = useCallback(async () => {
     try {

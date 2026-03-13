@@ -5,10 +5,31 @@ import ConversationList from "@/components/chat/conversation-list";
 import MessageThread from "@/components/chat/message-thread";
 import { useSocket } from "@/hooks/use-socket";
 
+interface ConversationItem {
+  id: string;
+  isGroup: boolean;
+  updatedAt: string;
+  otherUser: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  } | null;
+  lastMessage: {
+    id: string;
+    content: string;
+    senderId: string;
+    createdAt: string;
+    type: string;
+  } | null;
+}
+
 export default function MessagesClientShell({
   currentUserId,
+  initialConversations,
 }: {
   currentUserId: string;
+  initialConversations?: ConversationItem[];
 }) {
   const [activeConversationId, setActiveConversationId] = useState<
     string | undefined
@@ -38,6 +59,7 @@ export default function MessagesClientShell({
           activeConversationId={activeConversationId}
           onSelectConversation={setActiveConversationId}
           refreshKey={refreshKey}
+          initialConversations={initialConversations}
         />
       </div>
 
