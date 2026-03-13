@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import ConversationList from "@/components/chat/conversation-list";
 import MessageThread from "@/components/chat/message-thread";
+import { useSocket } from "@/hooks/use-socket";
 
 export default function MessagesClientShell({
   currentUserId,
@@ -12,6 +13,14 @@ export default function MessagesClientShell({
   const [activeConversationId, setActiveConversationId] = useState<
     string | undefined
   >();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Global socket listener for conversation updates (inbox refresh)
+  useSocket({
+    onConversationUpdated: useCallback(() => {
+      setRefreshKey((k) => k + 1);
+    }, []),
+  });
 
   return (
     <div className="flex h-full">
@@ -28,6 +37,7 @@ export default function MessagesClientShell({
           currentUserId={currentUserId}
           activeConversationId={activeConversationId}
           onSelectConversation={setActiveConversationId}
+          refreshKey={refreshKey}
         />
       </div>
 

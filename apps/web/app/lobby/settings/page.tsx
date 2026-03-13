@@ -130,9 +130,10 @@ export default function ProfileSettingsPage() {
               <h3 className="text-xl font-bold mb-6 text-foreground/90">Public Profile</h3>
               
               <div className="mb-8 p-6 glass-card rounded-2xl border border-white/5 bg-background/20 dark:bg-background/40">
-                <UploadAvatar 
-                  name={displayName || "WildCat"} 
-                  currentUrl={avatarUrl} 
+                <UploadAvatar
+                  name={displayName || "WildCat"}
+                  currentUrl={avatarUrl}
+                  onUploadSuccess={(url) => setAvatarUrl(url)}
                 />
               </div>
 

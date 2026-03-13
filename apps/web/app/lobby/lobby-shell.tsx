@@ -53,9 +53,9 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                     <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
 
                     {/* Sidebar Header */}
-                    <div className="flex items-center p-4 border-b border-white/10 relative z-10 h-[72px]">
-                        <Link href="/" className="flex items-center gap-0 hover:opacity-80 transition-opacity w-full overflow-hidden">
-                            <div className="w-[48px] h-[48px] flex items-center justify-center flex-shrink-0">
+                    <div className={`flex items-center border-b border-white/10 relative z-10 h-[72px] ${sidebarOpen ? "p-4" : "px-2 py-4 flex-col justify-center gap-1"}`}>
+                        <Link href="/" className={`flex items-center gap-0 hover:opacity-80 transition-opacity overflow-hidden ${sidebarOpen ? "w-full" : "justify-center"}`}>
+                            <div className="w-[36px] h-[36px] flex items-center justify-center flex-shrink-0">
                                 <PawPrint className="w-6 h-6 text-primary drop-shadow-sm" />
                             </div>
                             <AnimatePresence>
@@ -76,7 +76,7 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                         </Link>
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-1.5 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground backdrop-blur-sm flex-shrink-0 ml-auto absolute right-3"
+                            className={`p-1.5 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground backdrop-blur-sm flex-shrink-0 ${sidebarOpen ? "ml-auto absolute right-3" : ""}`}
                             aria-label="Toggle sidebar"
                         >
                             {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -183,7 +183,7 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                 </motion.aside>
 
                 {/* Main content - Also glassmorphic slightly */}
-                <main className="flex-1 overflow-auto rounded-[1.25rem] bg-white/40 dark:bg-black/20 backdrop-blur-3xl border border-white/20 dark:border-white/5 shadow-2xl relative">
+                <main className="flex-1 overflow-auto rounded-[1.25rem] bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-2xl relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none rounded-[1.25rem]" />
                     <div className="h-full relative z-10 overflow-y-auto">
                         {children}

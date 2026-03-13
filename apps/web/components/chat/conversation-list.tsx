@@ -37,12 +37,14 @@ interface ConversationListProps {
   currentUserId: string;
   activeConversationId?: string;
   onSelectConversation: (conversationId: string) => void;
+  refreshKey?: number;
 }
 
 export default function ConversationList({
   currentUserId,
   activeConversationId,
   onSelectConversation,
+  refreshKey,
 }: ConversationListProps) {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,8 +68,13 @@ export default function ConversationList({
 
   useEffect(() => {
     fetchConversations();
-    const interval = setInterval(fetchConversations, 5000);
-    return () => clearInterval(interval);
+  }, [fetchConversations, refreshKey]);
+
+  // Re-fetch conversation list when the window regains focus (instead of constant polling)
+  useEffect(() => {
+    const handleFocus = () => fetchConversations();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [fetchConversations]);
 
   useEffect(() => {

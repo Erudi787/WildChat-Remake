@@ -126,17 +126,17 @@ export default function MessageThread({
     }
   }, [messages]);
 
-  // Mark as read
+  // Mark as read — only when the last message ID actually changes
+  const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
   useEffect(() => {
-    if (messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
+    if (lastMessageId) {
       fetch(`/api/conversations/${conversationId}/read`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageId: lastMsg.id }),
+        body: JSON.stringify({ messageId: lastMessageId }),
       }).catch(() => { });
     }
-  }, [conversationId, messages]);
+  }, [conversationId, lastMessageId]);
 
   async function handleSendMessage(content: string) {
     try {
