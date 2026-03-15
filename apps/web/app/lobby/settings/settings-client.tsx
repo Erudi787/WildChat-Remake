@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 import SettingsNav from "./components/settings-nav";
 import UploadAvatar from "./components/upload-avatar";
+import { useProfile } from "@/contexts/profile-context";
 
 interface Profile {
   displayName: string;
@@ -23,6 +24,7 @@ interface SettingsClientProps {
 }
 
 export default function SettingsClient({ initialProfile }: SettingsClientProps) {
+  const { updateProfile } = useProfile();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -33,6 +35,28 @@ export default function SettingsClient({ initialProfile }: SettingsClientProps) 
   const [phone, setPhone] = useState(initialProfile.phone || "");
   const [bio, setBio] = useState(initialProfile.bio || "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialProfile.avatarUrl);
+
+  // Track whether the form has unsaved changes
+  const isDirty = useMemo(() => {
+    return (
+      displayName !== (initialProfile.displayName || "") ||
+      firstName !== (initialProfile.firstName || "") ||
+      lastName !== (initialProfile.lastName || "") ||
+      phone !== (initialProfile.phone || "") ||
+      bio !== (initialProfile.bio || "") ||
+      avatarUrl !== initialProfile.avatarUrl
+    );
+  }, [displayName, firstName, lastName, phone, bio, avatarUrl, initialProfile]);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -60,6 +84,8 @@ export default function SettingsClient({ initialProfile }: SettingsClientProps) 
         return;
       }
 
+      // Push live updates to sidebar/header via context
+      updateProfile({ name: displayName, avatarUrl });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch {

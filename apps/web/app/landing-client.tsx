@@ -5,15 +5,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { PawPrint, LogOut, ArrowUp, MessageSquare, ShieldCheck, Sparkles } from "lucide-react";
+import { PawPrint, LogOut, ArrowUp, MessageSquare, ShieldCheck, Sparkles, Bell } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { getUserAvatarGradient } from "@/lib/utils";
 
 interface LandingClientProps {
     session: any;
+    profile?: { avatarUrl: string | null; displayName: string } | null;
 }
 
-export default function LandingClient({ session }: LandingClientProps) {
+export default function LandingClient({ session, profile }: LandingClientProps) {
     const router = useRouter();
     const [scrolled, setScrolled] = useState(false);
 
@@ -26,9 +27,10 @@ export default function LandingClient({ session }: LandingClientProps) {
     }, []);
 
     const user = session?.user;
-    const initials = user?.name
-        ? user.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
-        : "WC";
+    const displayName = profile?.displayName || user?.name || "WC";
+    const userAvatarUrl = profile?.avatarUrl || user?.image || null;
+    const initials = displayName
+        .split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
     return (
         <div className="min-h-screen relative w-full overflow-x-hidden bg-background text-foreground font-sans selection:bg-primary/20">
@@ -51,25 +53,32 @@ export default function LandingClient({ session }: LandingClientProps) {
 
                     <div className="flex items-center gap-4">
                         {user ? (
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
                                 <div className="hidden sm:flex items-center gap-3 bg-white/5 dark:bg-black/20 rounded-full pl-2 pr-4 py-1.5 border border-white/10 shadow-sm backdrop-blur-md">
-                                    {user.image ? (
-                                        <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full ring-2 ring-primary/50" />
+                                    {userAvatarUrl ? (
+                                        <img src={userAvatarUrl} alt={displayName} className="w-8 h-8 rounded-full object-cover ring-2 ring-primary/50" />
                                     ) : (
-                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-primary/50 ${getUserAvatarGradient(user.name)}`}>
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ring-2 ring-primary/50 ${getUserAvatarGradient(displayName)}`}>
                                             {initials}
                                         </div>
                                     )}
                                     <span className="text-sm font-semibold truncate max-w-[120px] drop-shadow-sm">
-                                        {user.name}
+                                        {displayName}
                                     </span>
                                 </div>
-                                <Button
+                                <Link
+                                    href="/lobby/messages"
+                                    className="relative p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+                                    title="Messages"
+                                >
+                                    <Bell className="w-5 h-5" />
+                                </Link>
+                                <button
                                     onClick={() => router.push('/lobby')}
-                                    className="rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold"
+                                    className="h-10 px-4 rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-sm"
                                 >
                                     Go to Dashboard
-                                </Button>
+                                </button>
                                 <button
                                     onClick={() => signOut({ callbackUrl: '/' })}
                                     className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
@@ -86,9 +95,9 @@ export default function LandingClient({ session }: LandingClientProps) {
                                     </Button>
                                 </Link>
                                 <Link href="/auth">
-                                    <Button className="rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold">
+                                    <button className="h-10 px-4 rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-sm">
                                         Get Started
-                                    </Button>
+                                    </button>
                                 </Link>
                             </div>
                         )}
@@ -125,21 +134,19 @@ export default function LandingClient({ session }: LandingClientProps) {
 
                     <div className="flex justify-center">
                         {user ? (
-                            <Button
-                                size="lg"
+                            <button
                                 onClick={() => router.push('/lobby')}
-                                className="h-14 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(128,0,0,0.5)] hover:shadow-[0_0_60px_-15px_rgba(128,0,0,0.6)] hover:scale-105 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold text-lg border border-white/10"
+                                className="h-14 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(128,0,0,0.5)] hover:shadow-[0_0_60px_-15px_rgba(128,0,0,0.6)] hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-lg border border-white/10"
                             >
                                 Enter the Lobby ➔
-                            </Button>
+                            </button>
                         ) : (
                             <Link href="/auth">
-                                <Button
-                                    size="lg"
-                                    className="h-14 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(128,0,0,0.5)] hover:shadow-[0_0_60px_-15px_rgba(128,0,0,0.6)] hover:scale-105 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold text-lg border border-white/10"
+                                <button
+                                    className="h-14 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(128,0,0,0.5)] hover:shadow-[0_0_60px_-15px_rgba(128,0,0,0.6)] hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-lg border border-white/10"
                                 >
                                     Join the Community ➔
-                                </Button>
+                                </button>
                             </Link>
                         )}
                     </div>

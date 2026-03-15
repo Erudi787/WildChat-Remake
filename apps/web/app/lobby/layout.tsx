@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import LobbyShell from "./lobby-shell";
+import { ProfileProvider } from "@/contexts/profile-context";
 
 export default async function LobbyLayout({
     children,
@@ -24,14 +25,16 @@ export default async function LobbyLayout({
     }
 
     return (
-        <LobbyShell
-            user={{
-                id: session.user.id,
-                name: profile.displayName,
-                avatarUrl: profile.avatarUrl,
-            }}
-        >
-            {children}
-        </LobbyShell>
+        <ProfileProvider initialProfile={{ name: profile.displayName, avatarUrl: profile.avatarUrl }}>
+            <LobbyShell
+                user={{
+                    id: session.user.id,
+                    name: profile.displayName,
+                    avatarUrl: profile.avatarUrl,
+                }}
+            >
+                {children}
+            </LobbyShell>
+        </ProfileProvider>
     );
 }

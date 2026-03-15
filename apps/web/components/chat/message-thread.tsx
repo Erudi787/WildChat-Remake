@@ -5,6 +5,8 @@ import MessageInput from "./message-input";
 import { useSocket, SocketMessage } from "@/hooks/use-socket";
 import { Skeleton } from "@/components/ui/skeleton";
 import TypingIndicator from "./typing-indicator";
+import { useProfile } from "@/contexts/profile-context";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MessageSender {
   id: string;
@@ -31,6 +33,7 @@ export default function MessageThread({
   conversationId,
   currentUserId,
 }: MessageThreadProps) {
+  const { profile } = useProfile();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [typingUser, setTypingUser] = useState<string | null>(null);
@@ -98,31 +101,36 @@ export default function MessageThread({
   // Fallback polling only when Socket.IO is not connected
   useEffect(() => {
     if (connected) return; // No need to poll if socket is live
-    const interval = setInterval(fetchMessages, 3000);
+    const interval = setInterval(fetchMessages, 10000);
     return () => clearInterval(interval);
   }, [fetchMessages, connected]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isInitialLoad = useRef(true);
+  const prevMessageCountRef = useRef(0);
 
-  // Auto-scroll smarter logic
+  // Auto-scroll: only fires when message count actually changes (new message arrived)
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container) return;
+    if (!container || messages.length === 0) return;
 
-    const isNearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+    const prevCount = prevMessageCountRef.current;
+    prevMessageCountRef.current = messages.length;
 
-    if (isInitialLoad.current && messages.length > 0) {
-      // First load: instantly snap to bottom
+    // No change in count — skip (prevents re-scroll on refetch of same data)
+    if (prevCount === messages.length && !isInitialLoad.current) return;
+
+    if (isInitialLoad.current) {
+      // First load: instantly snap to bottom, then clear flag synchronously
       messagesEndRef.current?.scrollIntoView();
-      // Use a short timeout to ensure layout has painted before turning off initial load flag
-      setTimeout(() => {
-        isInitialLoad.current = false;
-      }, 100);
-    } else if (isNearBottom) {
-      // New message while at bottom: smooth scroll
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      isInitialLoad.current = false;
+    } else {
+      // New message: only smooth-scroll if user is near bottom
+      const isNearBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight < 150;
+      if (isNearBottom) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
     }
   }, [messages]);
 
@@ -163,7 +171,7 @@ export default function MessageThread({
   }
 
   function handleTyping() {
-    emitTypingStart(""); // displayName handled server-side
+    emitTypingStart(profile.name);
   }
 
   function formatMessageTime(dateStr: string) {
@@ -285,17 +293,21 @@ export default function MessageThread({
         <div ref={messagesEndRef} className="h-2" />
       </div>
 
-      {/* Typing indicator */}
-      <div className="relative">
-        {typingUser && (
-          <div className="absolute bottom-full left-0 right-0 pt-4 pb-1 z-10">
-            <TypingIndicator name={typingUser} />
-          </div>
-        )}
-      </div>
-
-      {/* Input bar */}
-      <div className="relative z-20">
+      {/* Typing indicator + Input bar */}
+      <div className="flex-shrink-0 relative z-20">
+        <AnimatePresence>
+          {typingUser && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <TypingIndicator name={typingUser} />
+            </motion.div>
+          )}
+        </AnimatePresence>
         <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
       </div>
     </div>
