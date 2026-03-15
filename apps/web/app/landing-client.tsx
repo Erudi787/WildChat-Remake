@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -8,16 +9,53 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PawPrint, LogOut, ArrowUp, MessageSquare, ShieldCheck, Sparkles, Bell } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { getUserAvatarGradient } from "@/lib/utils";
+import { useSocket, SocketMessage } from "@/hooks/use-socket";
+
+interface NotifItem {
+    id: string;
+    senderName: string;
+    senderAvatar: string | null;
+    content: string;
+    conversationId: string;
+    createdAt: string;
+}
 
 interface LandingClientProps {
     session: any;
     profile?: { avatarUrl: string | null; displayName: string } | null;
     unreadCount?: number;
+    initialNotifications?: NotifItem[];
 }
 
-export default function LandingClient({ session, profile, unreadCount = 0 }: LandingClientProps) {
+export default function LandingClient({ session, profile, unreadCount: initialUnread = 0, initialNotifications = [] }: LandingClientProps) {
     const router = useRouter();
+    const user = session?.user;
+    const [notifications, setNotifications] = useState<NotifItem[]>(initialNotifications);
     const [scrolled, setScrolled] = useState(false);
+    const [bellOpen, setBellOpen] = useState(false);
+    const [liveUnread, setLiveUnread] = useState(initialUnread);
+    const bellBtnRef = useRef<HTMLButtonElement>(null);
+    const bellDropdownRef = useRef<HTMLDivElement>(null);
+    const [bellPos, setBellPos] = useState<{ top: number; right: number } | null>(null);
+
+    // Listen for new messages via WebSocket (only when authenticated)
+    useSocket(user ? {
+        onConversationUpdated: useCallback((data: { conversationId: string; lastMessage: SocketMessage }) => {
+            if (data.lastMessage.senderId === user?.id) return;
+            setLiveUnread((c) => c + 1);
+            setNotifications((prev) => {
+                const item: NotifItem = {
+                    id: data.lastMessage.id,
+                    senderName: data.lastMessage.sender.displayName,
+                    senderAvatar: data.lastMessage.sender.avatarUrl,
+                    content: data.lastMessage.content,
+                    conversationId: data.conversationId,
+                    createdAt: data.lastMessage.createdAt,
+                };
+                return [item, ...prev.filter((n) => n.id !== item.id)].slice(0, 10);
+            });
+        }, [user?.id]),
+    } : {});
 
     useEffect(() => {
         const handleScroll = () => {
@@ -27,7 +65,33 @@ export default function LandingClient({ session, profile, unreadCount = 0 }: Lan
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const user = session?.user;
+    // Position the bell dropdown below the button
+    useLayoutEffect(() => {
+        if (bellOpen && bellBtnRef.current) {
+            const rect = bellBtnRef.current.getBoundingClientRect();
+            setBellPos({
+                top: rect.bottom + 8,
+                right: window.innerWidth - rect.right,
+            });
+        } else {
+            setBellPos(null);
+        }
+    }, [bellOpen]);
+
+    // Close bell dropdown on outside click
+    useEffect(() => {
+        if (!bellOpen) return;
+        const handle = (e: MouseEvent) => {
+            if (
+                bellDropdownRef.current && !bellDropdownRef.current.contains(e.target as Node) &&
+                bellBtnRef.current && !bellBtnRef.current.contains(e.target as Node)
+            ) {
+                setBellOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handle);
+        return () => document.removeEventListener("mousedown", handle);
+    }, [bellOpen]);
     const displayName = profile?.displayName || user?.name || "WC";
     const userAvatarUrl = profile?.avatarUrl || user?.image || null;
     const initials = displayName
@@ -67,18 +131,87 @@ export default function LandingClient({ session, profile, unreadCount = 0 }: Lan
                                         {displayName}
                                     </span>
                                 </div>
-                                <Link
-                                    href="/lobby/messages"
+                                <button
+                                    ref={bellBtnRef}
+                                    onClick={(e) => { e.stopPropagation(); setBellOpen((o) => !o); }}
                                     className="relative p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
-                                    title="Messages"
+                                    title="Notifications"
                                 >
                                     <Bell className="w-5 h-5" />
-                                    {unreadCount > 0 && (
+                                    {liveUnread > 0 && (
                                         <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-md ring-2 ring-background">
-                                            {unreadCount > 9 ? "9+" : unreadCount}
+                                            {liveUnread > 9 ? "9+" : liveUnread}
                                         </span>
                                     )}
-                                </Link>
+                                </button>
+                                {bellOpen && bellPos && typeof document !== "undefined" && createPortal(
+                                    <div
+                                        ref={bellDropdownRef}
+                                        className="fixed w-80 rounded-2xl border border-white/20 bg-background/95 backdrop-blur-xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in duration-150"
+                                        style={{ top: bellPos.top, right: bellPos.right }}
+                                    >
+                                        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                                            <h3 className="font-bold text-sm">Notifications</h3>
+                                            {liveUnread > 0 && (
+                                                <span className="text-xs text-primary font-medium">{liveUnread} unread</span>
+                                            )}
+                                        </div>
+                                        <div className="max-h-72 overflow-y-auto">
+                                            {notifications.length === 0 ? (
+                                                <div className="px-4 py-8 text-center">
+                                                    <Bell className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+                                                    <p className="text-sm text-muted-foreground">No new notifications</p>
+                                                </div>
+                                            ) : (
+                                                notifications.map((n) => (
+                                                    <button
+                                                        key={n.id}
+                                                        onClick={() => { setBellOpen(false); router.push(`/lobby/messages?chat=${n.conversationId}`); }}
+                                                        className="w-full px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b border-white/5 last:border-b-0"
+                                                    >
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                {n.senderAvatar ? (
+                                                                    <img src={n.senderAvatar} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
+                                                                ) : (
+                                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 ${getUserAvatarGradient(n.senderName)}`}>
+                                                                        {n.senderName[0]?.toUpperCase()}
+                                                                    </div>
+                                                                )}
+                                                                <p className="text-xs font-bold text-foreground/70 truncate">
+                                                                    Message from {n.senderName}
+                                                                </p>
+                                                            </div>
+                                                            <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 ml-2">
+                                                                {(() => {
+                                                                    const d = new Date(n.createdAt);
+                                                                    const now = new Date();
+                                                                    const diff = Math.floor((now.getTime() - d.getTime()) / 60000);
+                                                                    if (diff < 1) return "now";
+                                                                    if (diff < 60) return `${diff}m`;
+                                                                    if (diff < 1440) return `${Math.floor(diff / 60)}h`;
+                                                                    return `${Math.floor(diff / 1440)}d`;
+                                                                })()}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-sm text-foreground line-clamp-2 leading-snug">
+                                                            {n.content}
+                                                        </p>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                        <div className="px-4 py-2.5 border-t border-white/10">
+                                            <button
+                                                onClick={() => { setBellOpen(false); router.push("/lobby/messages"); }}
+                                                className="text-xs text-primary font-semibold hover:underline"
+                                            >
+                                                View all messages →
+                                            </button>
+                                        </div>
+                                    </div>,
+                                    document.body
+                                )}
                                 <button
                                     onClick={() => router.push('/lobby')}
                                     className="h-10 px-4 rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold text-sm"

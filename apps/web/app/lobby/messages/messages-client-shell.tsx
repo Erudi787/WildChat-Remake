@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import ConversationList from "@/components/chat/conversation-list";
 import MessageThread from "@/components/chat/message-thread";
 import { useSocket } from "@/hooks/use-socket";
@@ -32,9 +33,10 @@ export default function MessagesClientShell({
   currentUserId: string;
   initialConversations?: ConversationItem[];
 }) {
+  const searchParams = useSearchParams();
   const [activeConversationId, setActiveConversationId] = useState<
     string | undefined
-  >();
+  >(searchParams.get("chat") || undefined);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Global socket listener for conversation updates (inbox refresh)

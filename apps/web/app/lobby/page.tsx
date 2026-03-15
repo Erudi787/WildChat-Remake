@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getUserAvatarGradient } from "@/lib/utils";
 
+// Disable caching so router.refresh() always fetches fresh data
+export const dynamic = "force-dynamic";
+
 export default async function LobbyHomePage() {
   const session = await auth();
   if (!session?.user?.id) {
@@ -17,7 +20,7 @@ export default async function LobbyHomePage() {
     where: { userId },
   });
 
-  // Fetch recent conversations with latest message
+  // Fetch recent conversations with latest message + read status
   const participations = await prisma.conversationParticipant.findMany({
     where: { userId },
     include: {
@@ -40,6 +43,7 @@ export default async function LobbyHomePage() {
             orderBy: { createdAt: "desc" },
             take: 1,
             select: {
+              id: true,
               content: true,
               senderId: true,
               createdAt: true,
@@ -138,30 +142,39 @@ export default async function LobbyHomePage() {
               const lastMsg = conv.messages[0];
               const displayName =
                 other?.profile?.displayName || other?.username || "Unknown";
+              const hasUnread =
+                lastMsg &&
+                lastMsg.id !== p.lastReadMessageId &&
+                lastMsg.senderId !== userId;
 
               return (
                 <Link
                   key={conv.id}
-                  href="/lobby/messages"
-                  className="flex items-center gap-4 rounded-[1.25rem] glass-panel p-4 hover:bg-white/60 dark:hover:bg-black/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 group"
+                  href={`/lobby/messages?chat=${conv.id}`}
+                  className={`flex items-center gap-4 rounded-[1.25rem] glass-panel p-4 hover:bg-white/60 dark:hover:bg-black/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 group ${hasUnread ? "ring-2 ring-primary/30 bg-primary/5" : ""}`}
                 >
-                  {other?.profile?.avatarUrl ? (
-                    <img
-                      src={other.profile.avatarUrl}
-                      alt=""
-                      className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-white/20 shadow-sm group-hover:scale-105 transition-transform"
-                    />
-                  ) : (
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-base font-bold flex-shrink-0 shadow-sm ring-2 ring-white/20 group-hover:scale-105 transition-transform ${getUserAvatarGradient(other?.username || "?")}`}>
-                      {displayName[0].toUpperCase()}
-                    </div>
-                  )}
+                  <div className="relative flex-shrink-0">
+                    {other?.profile?.avatarUrl ? (
+                      <img
+                        src={other.profile.avatarUrl}
+                        alt=""
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-white/20 shadow-sm group-hover:scale-105 transition-transform"
+                      />
+                    ) : (
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-base font-bold shadow-sm ring-2 ring-white/20 group-hover:scale-105 transition-transform ${getUserAvatarGradient(other?.username || "?")}`}>
+                        {displayName[0].toUpperCase()}
+                      </div>
+                    )}
+                    {hasUnread && (
+                      <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full ring-2 ring-background shadow-sm" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-semibold truncate group-hover:text-primary transition-colors">
+                    <p className={`text-[15px] truncate group-hover:text-primary transition-colors ${hasUnread ? "font-bold" : "font-semibold"}`}>
                       {displayName}
                     </p>
                     {lastMsg ? (
-                      <p className="text-sm text-muted-foreground truncate opacity-90">
+                      <p className={`text-sm truncate ${hasUnread ? "text-foreground font-medium" : "text-muted-foreground opacity-90"}`}>
                         <span className="font-medium opacity-70">{lastMsg.senderId === userId ? "You: " : ""}</span>
                         {lastMsg.content}
                       </p>
@@ -172,9 +185,15 @@ export default async function LobbyHomePage() {
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
-                      {conv._count.messages} msgs
-                    </span>
+                    {hasUnread ? (
+                      <span className="text-[10px] font-bold text-primary-foreground uppercase tracking-wider bg-primary px-2 py-0.5 rounded-full">
+                        New
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-full">
+                        {conv._count.messages} msgs
+                      </span>
+                    )}
                   </div>
                 </Link>
               );

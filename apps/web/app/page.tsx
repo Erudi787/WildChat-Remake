@@ -13,39 +13,80 @@ const LandingClient = dynamic(() => import("./landing-client"), {
 export default async function HomePage() {
   const session = await auth();
 
-  // Fetch the user's actual profile avatar and unread count if authenticated
   let profileData: { avatarUrl: string | null; displayName: string } | null = null;
-  let unreadCount = 0;
+  let initialNotifications: {
+    id: string;
+    senderName: string;
+    senderAvatar: string | null;
+    content: string;
+    conversationId: string;
+    createdAt: string;
+  }[] = [];
+
   if (session?.user?.id) {
-    const [profile, unreadMessages] = await Promise.all([
+    const userId = session.user.id;
+
+    const [profile, recentUnread] = await Promise.all([
       prisma.userProfile.findUnique({
-        where: { userId: session.user.id },
+        where: { userId },
         select: { avatarUrl: true, displayName: true },
       }),
-      // Count conversations with unread messages
       prisma.conversationParticipant.findMany({
-        where: { userId: session.user.id },
-        select: {
-          lastReadMessageId: true,
+        where: { userId },
+        include: {
           conversation: {
-            select: {
+            include: {
               messages: {
                 orderBy: { createdAt: "desc" },
                 take: 1,
-                select: { id: true },
+                select: {
+                  id: true,
+                  content: true,
+                  senderId: true,
+                  createdAt: true,
+                  sender: {
+                    select: {
+                      profile: {
+                        select: { displayName: true, avatarUrl: true },
+                      },
+                    },
+                  },
+                },
               },
             },
           },
         },
+        orderBy: { conversation: { updatedAt: "desc" } },
       }),
     ]);
+
     profileData = profile;
-    // Count conversations where lastMessage.id !== lastReadMessageId
-    unreadCount = unreadMessages.filter((p) => {
-      const lastMsg = p.conversation.messages[0];
-      return lastMsg && lastMsg.id !== p.lastReadMessageId;
-    }).length;
+
+    initialNotifications = recentUnread
+      .filter((p) => {
+        const lastMsg = p.conversation.messages[0];
+        return lastMsg && lastMsg.id !== p.lastReadMessageId && lastMsg.senderId !== userId;
+      })
+      .map((p) => {
+        const msg = p.conversation.messages[0]!;
+        return {
+          id: msg.id,
+          senderName: msg.sender.profile?.displayName || "Unknown",
+          senderAvatar: msg.sender.profile?.avatarUrl || null,
+          content: msg.content,
+          conversationId: p.conversationId,
+          createdAt: msg.createdAt.toISOString(),
+        };
+      })
+      .slice(0, 10);
   }
 
-  return <LandingClient session={session} profile={profileData} unreadCount={unreadCount} />;
+  return (
+    <LandingClient
+      session={session}
+      profile={profileData}
+      unreadCount={initialNotifications.length}
+      initialNotifications={initialNotifications}
+    />
+  );
 }

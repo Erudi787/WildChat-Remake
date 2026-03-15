@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -16,6 +17,7 @@ interface LobbyShellProps {
         name: string;
         avatarUrl: string | null;
     };
+    initialNotifications?: NotificationItem[];
     children: React.ReactNode;
 }
 
@@ -34,14 +36,122 @@ interface NotificationItem {
     createdAt: string;
 }
 
-export default function LobbyShell({ user, children }: LobbyShellProps) {
+/** Portal-rendered dropdown — avoids all stacking context / overflow clipping issues */
+function NotificationDropdown({
+    bellRef,
+    notifications,
+    unreadCount,
+    onClose,
+    onNavigate,
+    formatRelativeTime,
+}: {
+    bellRef: React.RefObject<HTMLElement | null>;
+    notifications: NotificationItem[];
+    unreadCount: number;
+    onClose: () => void;
+    onNavigate: (path: string) => void;
+    formatRelativeTime: (d: string) => string;
+}) {
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+
+    // Position dropdown below the bell button — useLayoutEffect to avoid flash
+    useLayoutEffect(() => {
+        if (bellRef.current) {
+            const rect = bellRef.current.getBoundingClientRect();
+            setPos({
+                top: rect.bottom + 8,
+                right: window.innerWidth - rect.right,
+            });
+        }
+    }, [bellRef]);
+
+    // Close on click outside
+    useEffect(() => {
+        const handle = (e: MouseEvent) => {
+            if (
+                dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+                bellRef.current && !bellRef.current.contains(e.target as Node)
+            ) {
+                onClose();
+            }
+        };
+        document.addEventListener("mousedown", handle);
+        return () => document.removeEventListener("mousedown", handle);
+    }, [onClose, bellRef]);
+
+    if (!pos) return null;
+
+    return (
+        <div
+            ref={dropdownRef}
+            className="fixed w-80 rounded-2xl border border-white/20 bg-background/95 backdrop-blur-xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in duration-150"
+            style={{ top: pos.top, right: pos.right }}
+        >
+            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                <h3 className="font-bold text-sm">Notifications</h3>
+                {unreadCount > 0 && (
+                    <span className="text-xs text-primary font-medium">{unreadCount} new</span>
+                )}
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+                {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                        <Bell className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+                        <p className="text-sm text-muted-foreground">No notifications yet</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Messages will appear here</p>
+                    </div>
+                ) : (
+                    notifications.map((n) => (
+                        <button
+                            key={n.id}
+                            onClick={() => onNavigate(`/lobby/messages?chat=${n.conversationId}`)}
+                            className="w-full px-4 py-3 hover:bg-muted/50 transition-colors text-left border-b border-white/5 last:border-b-0"
+                        >
+                            <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-2 min-w-0">
+                                    {n.senderAvatar ? (
+                                        <img src={n.senderAvatar} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
+                                    ) : (
+                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 ${getUserAvatarGradient(n.senderName)}`}>
+                                            {n.senderName[0]?.toUpperCase()}
+                                        </div>
+                                    )}
+                                    <p className="text-xs font-bold text-foreground/70 truncate">
+                                        Message from {n.senderName}
+                                    </p>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 ml-2">
+                                    {formatRelativeTime(n.createdAt)}
+                                </span>
+                            </div>
+                            <p className="text-sm text-foreground line-clamp-2 leading-snug">
+                                {n.content}
+                            </p>
+                        </button>
+                    ))
+                )}
+            </div>
+            <div className="px-4 py-2.5 border-t border-white/10">
+                <button
+                    onClick={() => onNavigate("/lobby/messages")}
+                    className="text-xs text-primary font-semibold hover:underline"
+                >
+                    View all messages →
+                </button>
+            </div>
+        </div>
+    );
+}
+
+export default function LobbyShell({ user, initialNotifications = [], children }: LobbyShellProps) {
     const pathname = usePathname();
     const router = useRouter();
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [unreadCount, setUnreadCount] = useState(0);
+    const [unreadCount, setUnreadCount] = useState(initialNotifications.length);
     const [bellOpen, setBellOpen] = useState(false);
-    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-    const bellRef = useRef<HTMLDivElement>(null);
+    const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
+    const bellRef = useRef<HTMLButtonElement>(null);
     const { profile } = useProfile();
 
     // Use context profile (live updates) with server props as fallback
@@ -55,7 +165,7 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
         .toUpperCase()
         .slice(0, 2);
 
-    // Listen for new messages via socket — increment unread when not on messages page
+    // Listen for new messages via socket — update notifications + refresh server data
     useSocket({
         onConversationUpdated: useCallback((data: { conversationId: string; lastMessage: SocketMessage }) => {
             // Don't notify for own messages
@@ -70,11 +180,12 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                     conversationId: data.conversationId,
                     createdAt: data.lastMessage.createdAt,
                 };
-                // Keep last 10, no duplicates
                 const filtered = prev.filter((n) => n.id !== item.id);
                 return [item, ...filtered].slice(0, 10);
             });
-        }, [user.id]),
+            // Re-fetch server component data so lobby page updates in realtime
+            router.refresh();
+        }, [user.id, router]),
     });
 
     // Clear unread count when user navigates to messages
@@ -83,18 +194,6 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
             setUnreadCount(0);
         }
     }, [pathname]);
-
-    // Close bell dropdown when clicking outside
-    useEffect(() => {
-        if (!bellOpen) return;
-        const handleClick = (e: MouseEvent) => {
-            if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
-                setBellOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClick);
-        return () => document.removeEventListener("mousedown", handleClick);
-    }, [bellOpen]);
 
     function formatRelativeTime(dateStr: string) {
         const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -266,91 +365,42 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                 </motion.aside>
 
                 {/* Main content - Also glassmorphic slightly */}
-                <main className="flex-1 overflow-auto rounded-[1.25rem] bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-2xl relative flex flex-col">
+                <main className="flex-1 rounded-[1.25rem] bg-white/40 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-white/5 shadow-2xl relative flex flex-col overflow-visible">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none rounded-[1.25rem]" />
                     {/* Top header bar */}
-                    <div className="flex items-center justify-end px-4 py-2 border-b border-white/10 relative z-20 flex-shrink-0">
-                        <div ref={bellRef} className="relative">
-                            <button
-                                onClick={() => setBellOpen((o) => !o)}
-                                className="relative p-2 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
-                                title="Notifications"
-                            >
-                                <Bell className="w-5 h-5" />
-                                {unreadCount > 0 && (
-                                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200 ring-2 ring-background">
-                                        {unreadCount > 9 ? "9+" : unreadCount}
-                                    </span>
-                                )}
-                            </button>
+                    <div className="flex items-center justify-end px-4 py-2 border-b border-white/10 relative z-30 flex-shrink-0">
+                        <button
+                            ref={bellRef}
+                            onClick={(e) => { e.stopPropagation(); setBellOpen((o) => !o); }}
+                            className="relative p-2 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+                            title="Notifications"
+                        >
+                            <Bell className="w-5 h-5" />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200 ring-2 ring-background">
+                                    {unreadCount > 9 ? "9+" : unreadCount}
+                                </span>
+                            )}
+                        </button>
 
-                            {/* Notification dropdown */}
-                            <AnimatePresence>
-                                {bellOpen && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="absolute right-0 top-full mt-2 w-80 glass-card rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50"
-                                    >
-                                        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-                                            <h3 className="font-bold text-sm">Notifications</h3>
-                                            {unreadCount > 0 && (
-                                                <span className="text-xs text-primary font-medium">{unreadCount} new</span>
-                                            )}
-                                        </div>
-                                        <div className="max-h-72 overflow-y-auto">
-                                            {notifications.length === 0 ? (
-                                                <div className="px-4 py-8 text-center">
-                                                    <Bell className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
-                                                    <p className="text-sm text-muted-foreground">No notifications yet</p>
-                                                    <p className="text-xs text-muted-foreground/60 mt-1">Messages will appear here</p>
-                                                </div>
-                                            ) : (
-                                                notifications.map((n) => (
-                                                    <button
-                                                        key={n.id}
-                                                        onClick={() => {
-                                                            setBellOpen(false);
-                                                            setUnreadCount(0);
-                                                            router.push("/lobby/messages");
-                                                        }}
-                                                        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left border-b border-white/5 last:border-b-0"
-                                                    >
-                                                        {n.senderAvatar ? (
-                                                            <img src={n.senderAvatar} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-white/10" />
-                                                        ) : (
-                                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${getUserAvatarGradient(n.senderName)}`}>
-                                                                {n.senderName[0]?.toUpperCase()}
-                                                            </div>
-                                                        )}
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-semibold truncate">{n.senderName}</p>
-                                                            <p className="text-xs text-muted-foreground truncate">{n.content}</p>
-                                                        </div>
-                                                        <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 mt-0.5">
-                                                            {formatRelativeTime(n.createdAt)}
-                                                        </span>
-                                                    </button>
-                                                ))
-                                            )}
-                                        </div>
-                                        <div className="px-4 py-2.5 border-t border-white/10">
-                                            <Link
-                                                href="/lobby/messages"
-                                                onClick={() => { setBellOpen(false); setUnreadCount(0); }}
-                                                className="text-xs text-primary font-semibold hover:underline"
-                                            >
-                                                View all messages →
-                                            </Link>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
+                        {/* Notification dropdown — rendered via portal to avoid overflow clipping */}
+                        {bellOpen && typeof document !== "undefined" && createPortal(
+                            <NotificationDropdown
+                                bellRef={bellRef}
+                                notifications={notifications}
+                                unreadCount={unreadCount}
+                                onClose={() => setBellOpen(false)}
+                                onNavigate={(path) => {
+                                    setBellOpen(false);
+                                    setUnreadCount(0);
+                                    router.push(path);
+                                }}
+                                formatRelativeTime={formatRelativeTime}
+                            />,
+                            document.body
+                        )}
                     </div>
-                    <div className="flex-1 relative z-10 overflow-y-auto">
+                    <div className="flex-1 relative z-10 overflow-y-auto overflow-x-hidden">
                         {children}
                     </div>
                 </main>

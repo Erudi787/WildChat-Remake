@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getUserAvatarGradient } from "@/lib/utils";
@@ -72,6 +72,21 @@ export default function ConversationList({
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations, refreshKey]);
+
+  // Clear unread badge when a conversation is opened
+  const prevActiveRef = useRef(activeConversationId);
+  useEffect(() => {
+    if (activeConversationId && activeConversationId !== prevActiveRef.current) {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConversationId && c.lastMessage
+            ? { ...c, lastReadMessageId: c.lastMessage.id }
+            : c
+        )
+      );
+    }
+    prevActiveRef.current = activeConversationId;
+  }, [activeConversationId]);
 
   // Re-fetch conversation list when the window regains focus (instead of constant polling)
   useEffect(() => {
