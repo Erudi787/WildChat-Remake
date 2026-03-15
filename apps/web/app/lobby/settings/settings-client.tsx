@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,18 @@ export default function SettingsClient({ initialProfile }: SettingsClientProps) 
   const [phone, setPhone] = useState(initialProfile.phone || "");
   const [bio, setBio] = useState(initialProfile.bio || "");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialProfile.avatarUrl);
+  // Pending avatar: local preview + file, not yet uploaded
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [pendingAvatarPreview, setPendingAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const previewUrlRef = useRef<string | null>(null);
+
+  // Clean up object URL on unmount or when preview changes
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
 
   // Track whether the form has unsaved changes
   const isDirty = useMemo(() => {
@@ -44,9 +56,9 @@ export default function SettingsClient({ initialProfile }: SettingsClientProps) 
       lastName !== (initialProfile.lastName || "") ||
       phone !== (initialProfile.phone || "") ||
       bio !== (initialProfile.bio || "") ||
-      avatarUrl !== initialProfile.avatarUrl
+      pendingAvatarFile !== null
     );
-  }, [displayName, firstName, lastName, phone, bio, avatarUrl, initialProfile]);
+  }, [displayName, firstName, lastName, phone, bio, pendingAvatarFile, initialProfile]);
 
   // Warn user before leaving with unsaved changes
   useEffect(() => {
@@ -65,6 +77,35 @@ export default function SettingsClient({ initialProfile }: SettingsClientProps) 
     setSaving(true);
 
     try {
+      let finalAvatarUrl = avatarUrl;
+
+      // Upload pending avatar file first
+      if (pendingAvatarFile) {
+        setUploadingAvatar(true);
+        const formData = new FormData();
+        formData.append("file", pendingAvatarFile);
+        const uploadRes = await fetch("/api/user/avatar", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          const data = await uploadRes.json();
+          setError(data.error || "Failed to upload avatar");
+          setUploadingAvatar(false);
+          return;
+        }
+        const { url } = await uploadRes.json();
+        finalAvatarUrl = url;
+        setAvatarUrl(url);
+        setPendingAvatarFile(null);
+        if (previewUrlRef.current) {
+          URL.revokeObjectURL(previewUrlRef.current);
+          previewUrlRef.current = null;
+        }
+        setPendingAvatarPreview(null);
+        setUploadingAvatar(false);
+      }
+
       const res = await fetch("/api/user/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,7 +115,7 @@ export default function SettingsClient({ initialProfile }: SettingsClientProps) 
           lastName: lastName || undefined,
           phone: phone || undefined,
           bio: bio || undefined,
-          avatarUrl: avatarUrl || undefined,
+          avatarUrl: finalAvatarUrl || undefined,
         }),
       });
 
@@ -84,8 +125,8 @@ export default function SettingsClient({ initialProfile }: SettingsClientProps) 
         return;
       }
 
-      // Push live updates to sidebar/header via context
-      updateProfile({ name: displayName, avatarUrl });
+      // Push live updates to sidebar/header via context (only after save succeeds)
+      updateProfile({ name: displayName, avatarUrl: finalAvatarUrl });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch {
@@ -129,7 +170,15 @@ export default function SettingsClient({ initialProfile }: SettingsClientProps) 
                 <UploadAvatar
                   name={displayName || "WildCat"}
                   currentUrl={avatarUrl}
-                  onUploadSuccess={(url) => setAvatarUrl(url)}
+                  previewUrl={pendingAvatarPreview}
+                  uploading={uploadingAvatar}
+                  onFileSelected={(file, preview) => {
+                    // Revoke previous preview URL
+                    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+                    previewUrlRef.current = preview;
+                    setPendingAvatarFile(file);
+                    setPendingAvatarPreview(preview);
+                  }}
                 />
               </div>
 

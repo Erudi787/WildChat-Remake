@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useSession } from "next-auth/react";
 
@@ -51,28 +51,14 @@ export function useSocket({
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
-  // Get JWT token from the session cookie
-  const getToken = useCallback(async (): Promise<string | null> => {
-    try {
-      const res = await fetch("/api/auth/session");
-      const data = await res.json();
-      // For Socket.IO auth, we pass the raw session token
-      // The session cookie name in Auth.js is typically in the cookies
-      // Instead, we'll create a lightweight token endpoint
-      if (data && session?.user?.id) {
-        return session.user.id; // Fallback: we use internal API key approach
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }, [session]);
-
   useEffect(() => {
     if (!session?.user?.id) return;
 
     const socket = io(REALTIME_URL, {
-      auth: { token: session.user.id },
+      auth: {
+        token: session.user.id,
+        apiKey: "wildchat-internal-key",
+      },
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 1000,

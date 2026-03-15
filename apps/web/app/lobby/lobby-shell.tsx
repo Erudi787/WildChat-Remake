@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getUserAvatarGradient } from "@/lib/utils";
 import { Home, MessageSquare, Settings, LogOut, ChevronLeft, ChevronRight, PawPrint, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/profile-context";
-import { useSocket } from "@/hooks/use-socket";
+import { useSocket, SocketMessage } from "@/hooks/use-socket";
 
 interface LobbyShellProps {
     user: {
@@ -25,10 +25,23 @@ const navItems = [
     { label: "Settings", href: "/lobby/settings", icon: Settings },
 ];
 
+interface NotificationItem {
+    id: string;
+    senderName: string;
+    senderAvatar: string | null;
+    content: string;
+    conversationId: string;
+    createdAt: string;
+}
+
 export default function LobbyShell({ user, children }: LobbyShellProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [bellOpen, setBellOpen] = useState(false);
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const bellRef = useRef<HTMLDivElement>(null);
     const { profile } = useProfile();
 
     // Use context profile (live updates) with server props as fallback
@@ -44,9 +57,24 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
 
     // Listen for new messages via socket — increment unread when not on messages page
     useSocket({
-        onConversationUpdated: useCallback(() => {
+        onConversationUpdated: useCallback((data: { conversationId: string; lastMessage: SocketMessage }) => {
+            // Don't notify for own messages
+            if (data.lastMessage.senderId === user.id) return;
             setUnreadCount((c) => c + 1);
-        }, []),
+            setNotifications((prev) => {
+                const item: NotificationItem = {
+                    id: data.lastMessage.id,
+                    senderName: data.lastMessage.sender.displayName,
+                    senderAvatar: data.lastMessage.sender.avatarUrl,
+                    content: data.lastMessage.content,
+                    conversationId: data.conversationId,
+                    createdAt: data.lastMessage.createdAt,
+                };
+                // Keep last 10, no duplicates
+                const filtered = prev.filter((n) => n.id !== item.id);
+                return [item, ...filtered].slice(0, 10);
+            });
+        }, [user.id]),
     });
 
     // Clear unread count when user navigates to messages
@@ -55,6 +83,28 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
             setUnreadCount(0);
         }
     }, [pathname]);
+
+    // Close bell dropdown when clicking outside
+    useEffect(() => {
+        if (!bellOpen) return;
+        const handleClick = (e: MouseEvent) => {
+            if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+                setBellOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, [bellOpen]);
+
+    function formatRelativeTime(dateStr: string) {
+        const diffMs = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diffMs / 60000);
+        if (mins < 1) return "now";
+        if (mins < 60) return `${mins}m`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}h`;
+        return `${Math.floor(hrs / 24)}d`;
+    }
 
     return (
         <div className="flex h-screen bg-background relative overflow-hidden selection:bg-primary/20">
@@ -220,18 +270,85 @@ export default function LobbyShell({ user, children }: LobbyShellProps) {
                     <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent pointer-events-none rounded-[1.25rem]" />
                     {/* Top header bar */}
                     <div className="flex items-center justify-end px-4 py-2 border-b border-white/10 relative z-20 flex-shrink-0">
-                        <Link
-                            href="/lobby/messages"
-                            className="relative p-2 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
-                            title="Messages"
-                        >
-                            <Bell className="w-5 h-5" />
-                            {unreadCount > 0 && (
-                                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200 ring-2 ring-background">
-                                    {unreadCount > 9 ? "9+" : unreadCount}
-                                </span>
-                            )}
-                        </Link>
+                        <div ref={bellRef} className="relative">
+                            <button
+                                onClick={() => setBellOpen((o) => !o)}
+                                className="relative p-2 rounded-xl hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
+                                title="Notifications"
+                            >
+                                <Bell className="w-5 h-5" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-md animate-in zoom-in duration-200 ring-2 ring-background">
+                                        {unreadCount > 9 ? "9+" : unreadCount}
+                                    </span>
+                                )}
+                            </button>
+
+                            {/* Notification dropdown */}
+                            <AnimatePresence>
+                                {bellOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="absolute right-0 top-full mt-2 w-80 glass-card rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-50"
+                                    >
+                                        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                                            <h3 className="font-bold text-sm">Notifications</h3>
+                                            {unreadCount > 0 && (
+                                                <span className="text-xs text-primary font-medium">{unreadCount} new</span>
+                                            )}
+                                        </div>
+                                        <div className="max-h-72 overflow-y-auto">
+                                            {notifications.length === 0 ? (
+                                                <div className="px-4 py-8 text-center">
+                                                    <Bell className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+                                                    <p className="text-sm text-muted-foreground">No notifications yet</p>
+                                                    <p className="text-xs text-muted-foreground/60 mt-1">Messages will appear here</p>
+                                                </div>
+                                            ) : (
+                                                notifications.map((n) => (
+                                                    <button
+                                                        key={n.id}
+                                                        onClick={() => {
+                                                            setBellOpen(false);
+                                                            setUnreadCount(0);
+                                                            router.push("/lobby/messages");
+                                                        }}
+                                                        className="w-full flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors text-left border-b border-white/5 last:border-b-0"
+                                                    >
+                                                        {n.senderAvatar ? (
+                                                            <img src={n.senderAvatar} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-white/10" />
+                                                        ) : (
+                                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${getUserAvatarGradient(n.senderName)}`}>
+                                                                {n.senderName[0]?.toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-semibold truncate">{n.senderName}</p>
+                                                            <p className="text-xs text-muted-foreground truncate">{n.content}</p>
+                                                        </div>
+                                                        <span className="text-[10px] text-muted-foreground/60 flex-shrink-0 mt-0.5">
+                                                            {formatRelativeTime(n.createdAt)}
+                                                        </span>
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                        <div className="px-4 py-2.5 border-t border-white/10">
+                                            <Link
+                                                href="/lobby/messages"
+                                                onClick={() => { setBellOpen(false); setUnreadCount(0); }}
+                                                className="text-xs text-primary font-semibold hover:underline"
+                                            >
+                                                View all messages →
+                                            </Link>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                     <div className="flex-1 relative z-10 overflow-y-auto">
                         {children}

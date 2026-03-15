@@ -67,6 +67,7 @@ export default async function MessagesPage() {
       id: conv.id,
       isGroup: conv.isGroup,
       updatedAt: conv.updatedAt.toISOString(),
+      lastReadMessageId: p.lastReadMessageId,
       otherUser: otherParticipant
         ? {
             id: otherParticipant.user.id,

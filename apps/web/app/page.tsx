@@ -13,15 +13,39 @@ const LandingClient = dynamic(() => import("./landing-client"), {
 export default async function HomePage() {
   const session = await auth();
 
-  // Fetch the user's actual profile avatar if authenticated
+  // Fetch the user's actual profile avatar and unread count if authenticated
   let profileData: { avatarUrl: string | null; displayName: string } | null = null;
+  let unreadCount = 0;
   if (session?.user?.id) {
-    const profile = await prisma.userProfile.findUnique({
-      where: { userId: session.user.id },
-      select: { avatarUrl: true, displayName: true },
-    });
+    const [profile, unreadMessages] = await Promise.all([
+      prisma.userProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { avatarUrl: true, displayName: true },
+      }),
+      // Count conversations with unread messages
+      prisma.conversationParticipant.findMany({
+        where: { userId: session.user.id },
+        select: {
+          lastReadMessageId: true,
+          conversation: {
+            select: {
+              messages: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: { id: true },
+              },
+            },
+          },
+        },
+      }),
+    ]);
     profileData = profile;
+    // Count conversations where lastMessage.id !== lastReadMessageId
+    unreadCount = unreadMessages.filter((p) => {
+      const lastMsg = p.conversation.messages[0];
+      return lastMsg && lastMsg.id !== p.lastReadMessageId;
+    }).length;
   }
 
-  return <LandingClient session={session} profile={profileData} />;
+  return <LandingClient session={session} profile={profileData} unreadCount={unreadCount} />;
 }

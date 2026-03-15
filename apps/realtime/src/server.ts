@@ -51,13 +51,21 @@ interface NewMessagePayload {
 
 io.use((socket: AuthenticatedSocket, next) => {
   const token = socket.handshake.auth?.token;
+  const apiKey = socket.handshake.auth?.apiKey;
 
   if (!token) {
     return next(new Error("Authentication token required"));
   }
 
+  // Option 1: Internal API key + userId (used by the Next.js frontend)
+  const expectedKey = process.env.INTERNAL_API_KEY || "wildchat-internal-key";
+  if (apiKey === expectedKey) {
+    socket.userId = token; // token is the raw userId
+    return next();
+  }
+
+  // Option 2: JWT verification (for external clients / mobile)
   try {
-    // Auth.js JWT tokens are encoded with the AUTH_SECRET
     const decoded = jwt.verify(token, AUTH_SECRET) as {
       id?: string;
       sub?: string;

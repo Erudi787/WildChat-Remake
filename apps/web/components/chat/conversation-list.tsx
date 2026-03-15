@@ -18,6 +18,7 @@ interface ConversationItem {
   id: string;
   isGroup: boolean;
   updatedAt: string;
+  lastReadMessageId?: string | null;
   otherUser: {
     id: string;
     username: string;
@@ -221,51 +222,65 @@ export default function ConversationList({
             </p>
           </div>
         ) : (
-          conversations.map((conv) => (
-            <button
-              key={conv.id}
-              onClick={() => onSelectConversation(conv.id)}
-              className={`w-full flex items-center gap-3 p-3 transition-colors text-left border-b ${
-                activeConversationId === conv.id
-                  ? "bg-primary/10"
-                  : "hover:bg-muted/50"
-              }`}
-            >
-              {conv.otherUser?.avatarUrl ? (
-                <img
-                  src={conv.otherUser.avatarUrl}
-                  alt=""
-                  className="w-11 h-11 rounded-full object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ${getUserAvatarGradient(conv.otherUser?.username || "?")}`}>
-                  {(conv.otherUser?.displayName || "?")[0].toUpperCase()}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium truncate">
-                    {conv.otherUser?.displayName || "Unknown"}
-                  </p>
-                  {conv.lastMessage && (
-                    <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
-                      {formatTime(conv.lastMessage.createdAt)}
-                    </span>
+          conversations.map((conv) => {
+            const hasUnread =
+              conv.lastMessage &&
+              conv.lastMessage.id !== conv.lastReadMessageId &&
+              conv.lastMessage.senderId !== currentUserId;
+
+            return (
+              <button
+                key={conv.id}
+                onClick={() => onSelectConversation(conv.id)}
+                className={`w-full flex items-center gap-3 p-3 transition-colors text-left border-b ${
+                  activeConversationId === conv.id
+                    ? "bg-primary/10"
+                    : hasUnread
+                      ? "bg-primary/5"
+                      : "hover:bg-muted/50"
+                }`}
+              >
+                <div className="relative flex-shrink-0">
+                  {conv.otherUser?.avatarUrl ? (
+                    <img
+                      src={conv.otherUser.avatarUrl}
+                      alt=""
+                      className="w-11 h-11 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className={`w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold ${getUserAvatarGradient(conv.otherUser?.username || "?")}`}>
+                      {(conv.otherUser?.displayName || "?")[0].toUpperCase()}
+                    </div>
+                  )}
+                  {hasUnread && (
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full ring-2 ring-background shadow-sm" />
                   )}
                 </div>
-                {conv.lastMessage ? (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {conv.lastMessage.senderId === currentUserId ? "You: " : ""}
-                    {conv.lastMessage.content}
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground italic">
-                    No messages yet
-                  </p>
-                )}
-              </div>
-            </button>
-          ))
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className={`text-sm truncate ${hasUnread ? "font-bold text-foreground" : "font-medium"}`}>
+                      {conv.otherUser?.displayName || "Unknown"}
+                    </p>
+                    {conv.lastMessage && (
+                      <span className={`text-xs flex-shrink-0 ml-2 ${hasUnread ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                        {formatTime(conv.lastMessage.createdAt)}
+                      </span>
+                    )}
+                  </div>
+                  {conv.lastMessage ? (
+                    <p className={`text-xs truncate ${hasUnread ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                      {conv.lastMessage.senderId === currentUserId ? "You: " : ""}
+                      {conv.lastMessage.content}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground italic">
+                      No messages yet
+                    </p>
+                  )}
+                </div>
+              </button>
+            );
+          })
         )}
       </div>
     </div>

@@ -49,6 +49,12 @@ const config: Config = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
       },
+      keyframes: {
+        "typing-bounce": {
+          "0%, 60%, 100%": { transform: "translateY(0)" },
+          "30%": { transform: "translateY(-4px)" },
+        },
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

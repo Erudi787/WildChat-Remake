@@ -9,6 +9,7 @@ interface ConversationItem {
   id: string;
   isGroup: boolean;
   updatedAt: string;
+  lastReadMessageId?: string | null;
   otherUser: {
     id: string;
     username: string;

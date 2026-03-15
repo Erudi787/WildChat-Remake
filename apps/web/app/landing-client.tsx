@@ -12,9 +12,10 @@ import { getUserAvatarGradient } from "@/lib/utils";
 interface LandingClientProps {
     session: any;
     profile?: { avatarUrl: string | null; displayName: string } | null;
+    unreadCount?: number;
 }
 
-export default function LandingClient({ session, profile }: LandingClientProps) {
+export default function LandingClient({ session, profile, unreadCount = 0 }: LandingClientProps) {
     const router = useRouter();
     const [scrolled, setScrolled] = useState(false);
 
@@ -72,10 +73,15 @@ export default function LandingClient({ session, profile }: LandingClientProps) 
                                     title="Messages"
                                 >
                                     <Bell className="w-5 h-5" />
+                                    {unreadCount > 0 && (
+                                        <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center shadow-md ring-2 ring-background">
+                                            {unreadCount > 9 ? "9+" : unreadCount}
+                                        </span>
+                                    )}
                                 </Link>
                                 <button
                                     onClick={() => router.push('/lobby')}
-                                    className="h-10 px-4 rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-sm"
+                                    className="h-10 px-4 rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold text-sm"
                                 >
                                     Go to Dashboard
                                 </button>
@@ -95,7 +101,7 @@ export default function LandingClient({ session, profile }: LandingClientProps) 
                                     </Button>
                                 </Link>
                                 <Link href="/auth">
-                                    <button className="h-10 px-4 rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-sm">
+                                    <button className="h-10 px-4 rounded-full shadow-lg hover:shadow-primary/25 hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold text-sm">
                                         Get Started
                                     </button>
                                 </Link>
@@ -136,14 +142,14 @@ export default function LandingClient({ session, profile }: LandingClientProps) 
                         {user ? (
                             <button
                                 onClick={() => router.push('/lobby')}
-                                className="h-14 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(128,0,0,0.5)] hover:shadow-[0_0_60px_-15px_rgba(128,0,0,0.6)] hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-lg border border-white/10"
+                                className="h-14 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(128,0,0,0.5)] hover:shadow-[0_0_60px_-15px_rgba(128,0,0,0.6)] hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold text-lg border border-white/10"
                             >
                                 Enter the Lobby ➔
                             </button>
                         ) : (
                             <Link href="/auth">
                                 <button
-                                    className="h-14 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(128,0,0,0.5)] hover:shadow-[0_0_60px_-15px_rgba(128,0,0,0.6)] hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-primary/80 text-white font-bold text-lg border border-white/10"
+                                    className="h-14 px-8 rounded-full shadow-[0_0_40px_-10px_rgba(128,0,0,0.5)] hover:shadow-[0_0_60px_-15px_rgba(128,0,0,0.6)] hover:scale-105 active:scale-95 transition-all bg-gradient-to-r from-primary to-accent text-white font-bold text-lg border border-white/10"
                                 >
                                     Join the Community ➔
                                 </button>
