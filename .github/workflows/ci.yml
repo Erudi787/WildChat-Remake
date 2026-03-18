@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
@@ -26,20 +26,24 @@ jobs:
       - name: Generate Prisma Client
         run: npx turbo db:generate
 
-      - name: Typecheck
-        run: |
-          cd apps/web && npx tsc --noEmit
-          cd ../realtime && npx tsc --noEmit
+      - name: Typecheck web
+        run: npx tsc --noEmit
+        working-directory: apps/web
 
-      - name: Run Units Tests
-        run: cd apps/web && npm run test
+      - name: Typecheck realtime
+        run: npx tsc --noEmit
+        working-directory: apps/realtime
+
+      - name: Run Unit Tests
+        run: npm run test
+        working-directory: apps/web
 
       - name: Build Web App
-        run: cd apps/web && npm run build
+        run: npm run build
+        working-directory: apps/web
         env:
           NEXT_PUBLIC_REALTIME_URL: "http://localhost:3001"
           REALTIME_INTERNAL_URL: "http://localhost:3001"
           INTERNAL_API_KEY: "wildchat-internal-key"
-          # Mock DB URL for build typechecks that need the client generated
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/wildchat"
           AUTH_SECRET: "mock-secret-for-ci-build"
