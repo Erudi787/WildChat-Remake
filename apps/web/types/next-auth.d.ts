@@ -7,6 +7,8 @@ declare module "next-auth" {
       email?: string | null;
       name?: string | null;
       image?: string | null;
+      role: "USER" | "MODERATOR" | "ADMIN";
+      status: "PENDING" | "ACTIVE" | "REJECTED" | "SUSPENDED";
     };
   }
 }

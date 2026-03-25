@@ -18,6 +18,16 @@ export async function POST(req: Request) {
 
         const { username, email, password } = parsed.data;
 
+        // Enforce CIT-U institutional email
+        const allowedDomains = ["cit.edu", "wildchat.dev"]; // wildchat.dev for admin/test accounts
+        const emailDomain = email.split("@")[1]?.toLowerCase();
+        if (!emailDomain || !allowedDomains.some((d) => emailDomain === d || emailDomain.endsWith(`.${d}`))) {
+            return NextResponse.json(
+                { error: "Only CIT-U email addresses (@cit.edu) are allowed", field: "email" },
+                { status: 400 }
+            );
+        }
+
         // Check existing username
         const existingUsername = await prisma.user.findUnique({
             where: { username },

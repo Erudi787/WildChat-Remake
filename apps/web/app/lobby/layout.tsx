@@ -15,6 +15,12 @@ export default async function LobbyLayout({
         redirect("/auth");
     }
 
+    // Only ACTIVE users (or ADMINs) can access the lobby
+    const user = session.user as any;
+    if (user.role !== "ADMIN" && user.status !== "ACTIVE") {
+        redirect("/pending");
+    }
+
     // Check if user has completed onboarding
     const profile = await prisma.userProfile.findUnique({
         where: { userId: session.user.id },

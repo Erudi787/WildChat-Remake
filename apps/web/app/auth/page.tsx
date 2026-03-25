@@ -18,6 +18,7 @@ export default function AuthPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [registrationSuccess, setRegistrationSuccess] = useState(false);
     
     // Login State
     const [loginUsername, setLoginUsername] = useState("");
@@ -57,7 +58,16 @@ export default function AuthPage() {
             });
 
             if (res?.error) {
-                setError("Invalid username or password");
+                // Detect status-specific error codes from auth.ts
+                if (res.error.includes("ACCOUNT_PENDING")) {
+                    setError("Your account is pending approval by a CIT-U administrator. Please check back later.");
+                } else if (res.error.includes("ACCOUNT_REJECTED")) {
+                    setError("Your registration was not approved. Please contact a CIT-U administrator if you believe this is an error.");
+                } else if (res.error.includes("ACCOUNT_SUSPENDED")) {
+                    setError("Your account has been suspended. Please contact a CIT-U administrator.");
+                } else {
+                    setError("Invalid username or password");
+                }
                 setLoading(false);
                 return;
             }
@@ -121,20 +131,9 @@ export default function AuthPage() {
                 return;
             }
 
-            const signInRes = await signIn("credentials", {
-                username: regForm.username,
-                password: regForm.password,
-                redirect: false,
-            });
-
-            if (signInRes?.error) {
-                setError("Account created but login failed. Please sign in manually.");
-                setLoading(false);
-                setIsLogin(true); // Switch to login view
-                return;
-            }
-
-            router.push("/onboarding");
+            // Registration creates a PENDING account — show success, don't auto-login
+            setRegistrationSuccess(true);
+            setLoading(false);
         } catch {
             setError("Something went wrong. Please try again.");
             setLoading(false);
@@ -157,7 +156,46 @@ export default function AuthPage() {
 
             <div className="w-full max-w-md glass-card rounded-[2rem] p-8 shadow-2xl relative z-10 overflow-hidden">
                 <AnimatePresence mode="wait">
-                    {isLogin ? (
+                    {registrationSuccess ? (
+                        <motion.div
+                            key="success"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.4 }}
+                            className="text-center space-y-6 py-4"
+                        >
+                            <div className="mx-auto w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center ring-2 ring-green-500/20 shadow-inner">
+                                <span className="text-4xl">✅</span>
+                            </div>
+                            <div className="space-y-2">
+                                <h2 className="text-2xl font-extrabold text-foreground">Registration Submitted!</h2>
+                                <p className="text-muted-foreground text-sm leading-relaxed max-w-sm mx-auto">
+                                    Your account is pending approval by a CIT-U administrator.
+                                    You&apos;ll be able to log in once your registration has been reviewed and approved.
+                                </p>
+                            </div>
+                            <div className="pt-2 space-y-3">
+                                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                                    <p className="text-xs text-muted-foreground">
+                                        <span className="font-semibold text-foreground">Username:</span> {regForm.username}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        <span className="font-semibold text-foreground">Email:</span> {regForm.email}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setRegistrationSuccess(false);
+                                        setIsLogin(true);
+                                        setRegForm({ username: "", email: "", password: "", confirmPassword: "" });
+                                    }}
+                                    className="text-sm text-primary font-bold hover:underline"
+                                >
+                                    Back to Sign In
+                                </button>
+                            </div>
+                        </motion.div>
+                    ) : isLogin ? (
                         <motion.div
                             key="login"
                             initial={{ opacity: 0, x: -20 }}
@@ -285,11 +323,11 @@ export default function AuthPage() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="reg-email" className="text-foreground/80 font-semibold ml-1">Email</Label>
+                                        <Label htmlFor="reg-email" className="text-foreground/80 font-semibold ml-1">CIT-U Email</Label>
                                         <Input
                                             id="reg-email"
                                             type="email"
-                                            placeholder="your@email.edu"
+                                            placeholder="name@cit.edu"
                                             value={regForm.email}
                                             onChange={(e) => updateRegField("email", e.target.value)}
                                             required
