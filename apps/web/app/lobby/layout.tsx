@@ -87,6 +87,7 @@ export default async function LobbyLayout({
                     id: userId,
                     name: profile.displayName,
                     avatarUrl: profile.avatarUrl,
+                    role: (session.user as any).role || "USER",
                 }}
                 initialNotifications={initialNotifications}
             >

@@ -6,7 +6,7 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getUserAvatarGradient } from "@/lib/utils";
-import { Home, MessageSquare, Settings, LogOut, ChevronLeft, ChevronRight, PawPrint, Bell } from "lucide-react";
+import { Home, MessageSquare, Settings, LogOut, ChevronLeft, ChevronRight, PawPrint, Bell, Shield } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/profile-context";
 import { useSocket, SocketMessage } from "@/hooks/use-socket";
@@ -16,6 +16,7 @@ interface LobbyShellProps {
         id: string;
         name: string;
         avatarUrl: string | null;
+        role?: string;
     };
     initialNotifications?: NotificationItem[];
     children: React.ReactNode;
@@ -305,6 +306,33 @@ export default function LobbyShell({ user, initialNotifications = [], children }
                                 </Link>
                             );
                         })}
+
+                        {/* Admin Portal link — only visible to ADMIN/MODERATOR */}
+                        {(user.role === "ADMIN" || user.role === "MODERATOR") && (
+                            <>
+                                <div className="border-t border-white/10 my-2" />
+                                <Link
+                                    href="/admin"
+                                    className={`flex items-center px-3 py-3 rounded-xl text-sm font-medium transition-all duration-300 w-full text-muted-foreground hover:bg-white/10 hover:text-foreground hover:translate-x-1 ${!sidebarOpen && "justify-center px-0 hover:translate-x-0"}`}
+                                    title={!sidebarOpen ? "Admin Portal" : undefined}
+                                >
+                                    <Shield className="w-5 h-5 flex-shrink-0" />
+                                    <AnimatePresence>
+                                        {sidebarOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                                animate={{ opacity: 1, width: "auto", marginLeft: 12 }}
+                                                exit={{ opacity: 0, width: 0, marginLeft: 0 }}
+                                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                className="overflow-hidden whitespace-nowrap"
+                                            >
+                                                <span className="drop-shadow-sm">Admin Portal</span>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </Link>
+                            </>
+                        )}
                     </nav>
 
                     {/* User Section */}
